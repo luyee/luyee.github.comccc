@@ -1,0 +1,2015 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>DonganWangshi</title>
+  <meta name="author" content="DonganWangshi">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+  <meta property="og:site_name" content="DonganWangshi"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="DonganWangshi" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">DonganWangshi</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-29T11:38:05.000Z"><a href="/2013/10/29/hello-world/">10月 29 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/29/hello-world/">Hello World</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>Welcome to <a href="http://zespia.tw/hexo" target="_blank">Hexo</a>! This is your very first post. Check <a href="http://zespia.tw/hexo/docs" target="_blank">documentation</a> to learn how to use.</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-29T10:40:00.000Z"><a href="/2013/10/29/mapreduce-shuffle/">10月 29 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/29/mapreduce-shuffle/">MapReduce的Shuffle阶段的几大土豪</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h2>Reduce端</h2>
+<p>ReduceTask,java<br>ReduceCopier,<br>GetMapEventsThread</p>
+<p>GetMapEventsThread的run()方法中会调用了getMapCompletionEvents()，</p>
+<p>在getMapCompletionEvents()通过Rpc调用向TaskTracker获取reduceTask.getJobID()的jobID对应的map的完成情况</p>
+<p>返回一个TaskCompletionEvent events[] 数组，此后MapOutputCopier线程的run()方法中调用copyOutput(loc);</p>
+<p>依次：<br>fetchOutputs —&gt;MapOutputCopier—&gt;copyOutput—-&gt;getMapOutput—-&gt;shuffleInMemory/shuffleToDisk(将文件拷贝到内存/磁盘)</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+</pre></td><td class="code"><pre>   <span class="keyword">private</span> <span class="class"><span class="keyword">class</span> <span class="title">GetMapEventsThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> {</span>
+      
+      <span class="keyword">private</span> IntWritable fromEventId = <span class="keyword">new</span> IntWritable(<span class="number">0</span>);
+      <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> SLEEP_TIME = <span class="number">1000</span>;
+      
+      <span class="keyword">public</span> GetMapEventsThread() {
+        setName(<span class="string">"Thread for polling Map Completion Events"</span>);
+        setDaemon(<span class="keyword">true</span>);
+      }
+      
+      <span class="annotation">@Override</span>
+      <span class="keyword">public</span> <span class="keyword">void</span> run() {
+      
+        LOG.info(reduceTask.getTaskID() + <span class="string">" Thread started: "</span> + getName());
+        
+        do {
+          <span class="keyword">try</span> {
+            <span class="keyword">int</span> numNewMaps = getMapCompletionEvents();
+            <span class="keyword">if</span> (LOG.isDebugEnabled()) {
+              <span class="keyword">if</span> (numNewMaps &gt; <span class="number">0</span>) {
+                LOG.debug(reduceTask.getTaskID() + <span class="string">": "</span> +  
+                    <span class="string">"Got "</span> + numNewMaps + <span class="string">" new map-outputs"</span>); 
+              }
+            }
+            Thread.sleep(SLEEP_TIME);
+          } 
+          <span class="keyword">catch</span> (InterruptedException e) {
+            LOG.warn(reduceTask.getTaskID() +
+                <span class="string">" GetMapEventsThread returning after an "</span> +
+                <span class="string">" interrupted exception"</span>);
+            <span class="keyword">return</span>;
+          }
+          <span class="keyword">catch</span> (Throwable t) {
+            String msg = reduceTask.getTaskID()
+                         + <span class="string">" GetMapEventsThread Ignoring exception : "</span> 
+                         + StringUtils.stringifyException(t);
+            reportFatalError(getTaskID(), t, msg);
+          }
+        } <span class="keyword">while</span> (!exitGetMapEvents);
+
+        LOG.info(<span class="string">"GetMapEventsThread exiting"</span>);
+      
+      }
+      
+      <span class="javadoc">/** 
+       * Queries the {<span class="javadoctag">@link</span> TaskTracker} for a set of map-completion events 
+       * from a given event ID.
+       * <span class="javadoctag">@throws</span> IOException
+       */</span>  
+      <span class="keyword">private</span> <span class="keyword">int</span> getMapCompletionEvents() <span class="keyword">throws</span> IOException {
+        
+        <span class="keyword">int</span> numNewMaps = <span class="number">0</span>;
+        
+        MapTaskCompletionEventsUpdate update = 
+          umbilical.getMapCompletionEvents(reduceTask.getJobID(), 
+                                           fromEventId.get(), 
+                                           MAX_EVENTS_TO_FETCH,
+                                           reduceTask.getTaskID(), jvmContext);
+        TaskCompletionEvent events[] = update.getMapTaskCompletionEvents();
+          
+        <span class="comment">// Check if the reset is required.</span>
+        <span class="comment">// Since there is no ordering of the task completion events at the </span>
+        <span class="comment">// reducer, the only option to sync with the new jobtracker is to reset </span>
+        <span class="comment">// the events index</span>
+        <span class="keyword">if</span> (update.shouldReset()) {
+          fromEventId.set(<span class="number">0</span>);
+          obsoleteMapIds.clear(); <span class="comment">// clear the obsolete map</span>
+          mapLocations.clear(); <span class="comment">// clear the map locations mapping</span>
+        }
+        
+        <span class="comment">// Update the last seen event ID</span>
+        fromEventId.set(fromEventId.get() + events.length);
+        
+        <span class="comment">// Process the TaskCompletionEvents:</span>
+        <span class="comment">// 1. Save the SUCCEEDED maps in knownOutputs to fetch the outputs.</span>
+        <span class="comment">// 2. Save the OBSOLETE/FAILED/KILLED maps in obsoleteOutputs to stop </span>
+        <span class="comment">//    fetching from those maps.</span>
+        <span class="comment">// 3. Remove TIPFAILED maps from neededOutputs since we don't need their</span>
+        <span class="comment">//    outputs at all.</span>
+        <span class="keyword">for</span> (TaskCompletionEvent event : events) {
+          <span class="keyword">switch</span> (event.getTaskStatus()) {
+            <span class="keyword">case</span> SUCCEEDED:
+            {
+              URI u = URI.create(event.getTaskTrackerHttp());
+              String host = u.getHost();
+              TaskAttemptID taskId = event.getTaskAttemptId();
+              URL mapOutputLocation = <span class="keyword">new</span> URL(event.getTaskTrackerHttp() + 
+                                      <span class="string">"/mapOutput?job="</span> + taskId.getJobID() +
+                                      <span class="string">"&map="</span> + taskId + 
+                                      <span class="string">"&reduce="</span> + getPartition());
+              List&lt;MapOutputLocation&gt; loc = mapLocations.get(host);
+              <span class="keyword">if</span> (loc == <span class="keyword">null</span>) {
+                loc = Collections.synchronizedList
+                  (<span class="keyword">new</span> LinkedList&lt;MapOutputLocation&gt;());
+                mapLocations.put(host, loc);
+               }
+              loc.add(<span class="keyword">new</span> MapOutputLocation(taskId, host, mapOutputLocation));
+              numNewMaps ++;
+            }
+            <span class="keyword">break</span>;
+            <span class="keyword">case</span> FAILED:
+            <span class="keyword">case</span> KILLED:
+            <span class="keyword">case</span> OBSOLETE:
+            {
+              obsoleteMapIds.add(event.getTaskAttemptId());
+              LOG.info(<span class="string">"Ignoring obsolete output of "</span> + event.getTaskStatus() + 
+                       <span class="string">" map-task: '"</span> + event.getTaskAttemptId() + <span class="string">"'"</span>);
+            }
+            <span class="keyword">break</span>;
+            <span class="keyword">case</span> TIPFAILED:
+            {
+              copiedMapOutputs.add(event.getTaskAttemptId().getTaskID());
+              LOG.info(<span class="string">"Ignoring output of failed map TIP: '"</span> +  
+                   event.getTaskAttemptId() + <span class="string">"'"</span>);
+            }
+            <span class="keyword">break</span>;
+          }
+        }
+        <span class="keyword">return</span> numNewMaps;
+      }
+    }
+</pre></td></tr></table></figure>
+
+<p>InMemFSMergeThread</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+</pre></td><td class="code"><pre>    <span class="keyword">private</span> <span class="class"><span class="keyword">class</span> <span class="id">InMemFSMergeThread</span> <span class="id">extends</span> <span class="id">Thread</span> {</span>
+      
+      <span class="keyword">public</span> InMemFSMergeThread() {
+        setName(<span class="string">"Thread for merging in memory files"</span>);
+        setDaemon(<span class="literal">true</span>);
+      }
+      
+      <span class="keyword">public</span> <span class="keyword">void</span> run() {
+        LOG<span class="variable">.info</span>(reduceTask<span class="variable">.getTaskID</span>() + <span class="string">" Thread started: "</span> + getName());
+        <span class="keyword">try</span> {
+          boolean exit = <span class="literal">false</span>;
+          <span class="keyword">do</span> {
+            exit = ramManager<span class="variable">.waitForDataToMerge</span>();
+            <span class="keyword">if</span> (!exit) {
+              doInMemMerge();
+            }
+          } <span class="keyword">while</span> (!exit);
+        } <span class="keyword">catch</span> (Exception e) {
+          LOG<span class="variable">.warn</span>(reduceTask<span class="variable">.getTaskID</span>() +
+                   <span class="string">" Merge of the inmemory files threw an exception: "</span>
+                   + StringUtils<span class="variable">.stringifyException</span>(e));
+          ReduceCopier<span class="variable">.this</span><span class="variable">.mergeThrowable</span> = e;
+        } <span class="keyword">catch</span> (Throwable t) {
+          String msg = getTaskID() + <span class="string">" : Failed to merge in memory"</span> 
+                       + StringUtils<span class="variable">.stringifyException</span>(t);
+          reportFatalError(getTaskID(), t, msg);
+        }
+      }
+      
+      @SuppressWarnings(<span class="string">"unchecked"</span>)
+      <span class="keyword">private</span> <span class="keyword">void</span> doInMemMerge() throws IOException{
+        <span class="keyword">if</span> (mapOutputsFilesInMemory<span class="variable">.size</span>() == <span class="number">0</span>) {
+          <span class="keyword">return</span>;
+        }
+        
+        <span class="comment">//name this output file same as the name of the first file that is </span>
+        <span class="comment">//there in the current list of inmem files (this is guaranteed to</span>
+        <span class="comment">//be absent on the disk currently. So we don't overwrite a prev. </span>
+        <span class="comment">//created spill). Also we need to create the output file now since</span>
+        <span class="comment">//it is not guaranteed that this file will be present after merge</span>
+        <span class="comment">//is called (we delete empty files as soon as we see them</span>
+        <span class="comment">//in the merge method)</span>
+
+        <span class="comment">//figure out the mapId </span>
+        TaskID mapId = mapOutputsFilesInMemory<span class="variable">.get</span>(<span class="number">0</span>)<span class="variable">.mapId</span>;
+
+        List&lt;Segment&lt;K, V&gt;&gt; inMemorySegments = new ArrayList&lt;Segment&lt;K,V&gt;&gt;();
+        <span class="keyword">long</span> mergeOutputSize = createInMemorySegments(inMemorySegments, <span class="number">0</span>);
+        <span class="keyword">int</span> noInMemorySegments = inMemorySegments<span class="variable">.size</span>();
+
+        Path outputPath =
+            mapOutputFile<span class="variable">.getInputFileForWrite</span>(mapId, mergeOutputSize);
+
+        Writer writer = 
+          new Writer(conf, rfs, outputPath,
+                     conf<span class="variable">.getMapOutputKeyClass</span>(),
+                     conf<span class="variable">.getMapOutputValueClass</span>(),
+                     codec, null);
+
+        RawKeyValueIterator rIter = null;
+        <span class="keyword">try</span> {
+          LOG<span class="variable">.info</span>(<span class="string">"Initiating in-memory merge with "</span> + noInMemorySegments + 
+                   <span class="string">" segments..."</span>);
+          
+          rIter = Merger<span class="variable">.merge</span>(conf, rfs,
+                               (Class&lt;K&gt;)conf<span class="variable">.getMapOutputKeyClass</span>(),
+                               (Class&lt;V&gt;)conf<span class="variable">.getMapOutputValueClass</span>(),
+                               inMemorySegments, inMemorySegments<span class="variable">.size</span>(),
+                               new Path(reduceTask<span class="variable">.getTaskID</span>()<span class="variable">.toString</span>()),
+                               conf<span class="variable">.getOutputKeyComparator</span>(), reporter,
+                               spilledRecordsCounter, null);
+          
+          <span class="keyword">if</span> (combinerRunner == null) {
+            Merger<span class="variable">.writeFile</span>(rIter, writer, reporter, conf);
+          } <span class="keyword">else</span> {
+            combineCollector<span class="variable">.setWriter</span>(writer);
+            combinerRunner<span class="variable">.combine</span>(rIter, combineCollector);
+          }
+          writer<span class="variable">.close</span>();
+
+          LOG<span class="variable">.info</span>(reduceTask<span class="variable">.getTaskID</span>() + 
+              <span class="string">" Merge of the "</span> + noInMemorySegments +
+              <span class="string">" files in-memory complete."</span> +
+              <span class="string">" Local file is "</span> + outputPath + <span class="string">" of size "</span> + 
+              localFileSys<span class="variable">.getFileStatus</span>(outputPath)<span class="variable">.getLen</span>());
+        } <span class="keyword">catch</span> (Exception e) { 
+          <span class="comment">//make sure that we delete the ondisk file that we created </span>
+          <span class="comment">//earlier when we invoked cloneFileAttributes</span>
+          localFileSys<span class="variable">.delete</span>(outputPath, <span class="literal">true</span>);
+          <span class="keyword">throw</span> (IOException)new IOException
+                  (<span class="string">"Intermediate merge failed"</span>)<span class="variable">.initCause</span>(e);
+        }
+
+        <span class="comment">// Note the output of the merge</span>
+        FileStatus status = localFileSys<span class="variable">.getFileStatus</span>(outputPath);
+        <span class="keyword">synchronized</span> (mapOutputFilesOnDisk) {
+          addToMapOutputFilesOnDisk(status);
+        }
+      }
+    }
+</pre></td></tr></table></figure>
+
+<p>LocalFSMerger</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+</pre></td><td class="code"><pre> <span class="javadoc">/** Starts merging the local copy (on disk) of the map's output so that
+     * most of the reducer's input is sorted i.e overlapping shuffle
+     * and merge phases.
+     */</span>
+    <span class="keyword">private</span> <span class="class"><span class="keyword">class</span> <span class="title">LocalFSMerger</span> <span class="keyword">extends</span> <span class="title">Thread</span> {</span>
+      <span class="keyword">private</span> LocalFileSystem localFileSys;
+
+      <span class="keyword">public</span> LocalFSMerger(LocalFileSystem fs) {
+        <span class="keyword">this</span>.localFileSys = fs;
+        setName(<span class="string">"Thread for merging on-disk files"</span>);
+        setDaemon(<span class="keyword">true</span>);
+      }
+
+      <span class="annotation">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)
+      <span class="keyword">public</span> <span class="keyword">void</span> run() {
+        <span class="keyword">try</span> {
+          LOG.info(reduceTask.getTaskID() + <span class="string">" Thread started: "</span> + getName());
+          <span class="keyword">while</span>(!exitLocalFSMerge){
+            <span class="keyword">synchronized</span> (mapOutputFilesOnDisk) {
+              <span class="keyword">while</span> (!exitLocalFSMerge &&
+                  mapOutputFilesOnDisk.size() &lt; (<span class="number">2</span> * ioSortFactor - <span class="number">1</span>)) {
+                LOG.info(reduceTask.getTaskID() + <span class="string">" Thread waiting: "</span> + getName());
+                mapOutputFilesOnDisk.wait();
+              }
+            }
+            <span class="keyword">if</span>(exitLocalFSMerge) {<span class="comment">//to avoid running one extra time in the end</span>
+              <span class="keyword">break</span>;
+            }
+            List&lt;Path&gt; mapFiles = <span class="keyword">new</span> ArrayList&lt;Path&gt;();
+            <span class="keyword">long</span> approxOutputSize = <span class="number">0</span>;
+            <span class="keyword">int</span> bytesPerSum = 
+              reduceTask.getConf().getInt(<span class="string">"io.bytes.per.checksum"</span>, <span class="number">512</span>);
+            LOG.info(reduceTask.getTaskID() + <span class="string">"We have  "</span> + 
+                mapOutputFilesOnDisk.size() + <span class="string">" map outputs on disk. "</span> +
+                <span class="string">"Triggering merge of "</span> + ioSortFactor + <span class="string">" files"</span>);
+            <span class="comment">// 1. Prepare the list of files to be merged. This list is prepared</span>
+            <span class="comment">// using a list of map output files on disk. Currently we merge</span>
+            <span class="comment">// io.sort.factor files into 1.</span>
+            <span class="keyword">synchronized</span> (mapOutputFilesOnDisk) {
+              <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ioSortFactor; ++i) {
+                FileStatus filestatus = mapOutputFilesOnDisk.first();
+                mapOutputFilesOnDisk.remove(filestatus);
+                mapFiles.add(filestatus.getPath());
+                approxOutputSize += filestatus.getLen();
+              }
+            }
+            
+            <span class="comment">// sanity check</span>
+            <span class="keyword">if</span> (mapFiles.size() == <span class="number">0</span>) {
+                <span class="keyword">return</span>;
+            }
+            
+            <span class="comment">// add the checksum length</span>
+            approxOutputSize += ChecksumFileSystem
+                                .getChecksumLength(approxOutputSize,
+                                                   bytesPerSum);
+  
+            <span class="comment">// 2. Start the on-disk merge process</span>
+            Path outputPath = 
+              lDirAlloc.getLocalPathForWrite(mapFiles.get(<span class="number">0</span>).toString(), 
+                                             approxOutputSize, conf)
+              .suffix(<span class="string">".merged"</span>);
+            Writer writer = 
+              <span class="keyword">new</span> Writer(conf,rfs, outputPath, 
+                         conf.getMapOutputKeyClass(), 
+                         conf.getMapOutputValueClass(),
+                         codec, <span class="keyword">null</span>);
+            RawKeyValueIterator iter  = <span class="keyword">null</span>;
+            Path tmpDir = <span class="keyword">new</span> Path(reduceTask.getTaskID().toString());
+            <span class="keyword">try</span> {
+              iter = Merger.merge(conf, rfs,
+                                  conf.getMapOutputKeyClass(),
+                                  conf.getMapOutputValueClass(),
+                                  codec, mapFiles.toArray(<span class="keyword">new</span> Path[mapFiles.size()]), 
+                                  <span class="keyword">true</span>, ioSortFactor, tmpDir, 
+                                  conf.getOutputKeyComparator(), reporter,
+                                  spilledRecordsCounter, <span class="keyword">null</span>);
+              
+              Merger.writeFile(iter, writer, reporter, conf);
+              writer.close();
+            } <span class="keyword">catch</span> (Exception e) {
+              localFileSys.delete(outputPath, <span class="keyword">true</span>);
+              <span class="keyword">throw</span> <span class="keyword">new</span> IOException (StringUtils.stringifyException(e));
+            }
+            
+            <span class="keyword">synchronized</span> (mapOutputFilesOnDisk) {
+              addToMapOutputFilesOnDisk(localFileSys.getFileStatus(outputPath));
+            }
+            
+            LOG.info(reduceTask.getTaskID() +
+                     <span class="string">" Finished merging "</span> + mapFiles.size() + 
+                     <span class="string">" map output files on disk of total-size "</span> + 
+                     approxOutputSize + <span class="string">"."</span> + 
+                     <span class="string">" Local output file is "</span> + outputPath + <span class="string">" of size "</span> +
+                     localFileSys.getFileStatus(outputPath).getLen());
+            }
+        } <span class="keyword">catch</span> (Exception e) {
+          LOG.warn(reduceTask.getTaskID()
+                   + <span class="string">" Merging of the local FS files threw an exception: "</span>
+                   + StringUtils.stringifyException(e));
+          <span class="keyword">if</span> (mergeThrowable == <span class="keyword">null</span>) {
+            mergeThrowable = e;
+          }
+        } <span class="keyword">catch</span> (Throwable t) {
+          String msg = getTaskID() + <span class="string">" : Failed to merge on the local FS"</span> 
+                       + StringUtils.stringifyException(t);
+          reportFatalError(getTaskID(), t, msg);
+        }
+      }
+    }
+</pre></td></tr></table></figure>
+
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>
+
+</pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-25T14:55:57.000Z"><a href="/2013/10/25/mr-reducetask/">10月 25 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/25/mr-reducetask/">MapReduce源代码之ReduceTask</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>ReduceTask是Task的子类<br>首先创建TaskReporter与parent通信<br>与MapTask一样执行cleanUP，然后才是reduce</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre></td><td class="code"><pre>  <span class="comment">// start thread that will handle communication with parent</span>
+    TaskReporter reporter = <span class="keyword">new</span> TaskReporter(getProgress(), umbilical,
+        jvmContext);
+    reporter.startCommunicationThread();
+	   <span class="keyword">boolean</span> useNewApi = job.getUseNewReducer();
+    initialize(job, getJobID(), reporter, useNewApi);
+
+    <span class="comment">// check if it is a cleanupJobTask</span>
+    <span class="keyword">if</span> (jobCleanup) {
+      runJobCleanupTask(umbilical, reporter);
+      <span class="keyword">return</span>;
+    }
+    <span class="keyword">if</span> (jobSetup) {
+      runJobSetupTask(umbilical, reporter);
+      <span class="keyword">return</span>;
+    }
+    <span class="keyword">if</span> (taskCleanup) {
+      runTaskCleanupTask(umbilical, reporter);
+      <span class="keyword">return</span>;
+    }
+</pre></td></tr></table></figure>
+
+<h2>reduce可以分为三阶段copy ,sort,reduce</h2>
+<p>//copy 阶段,主要是fetchOutputs()中</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre></td><td class="code"><pre>    <span class="keyword">boolean</span> isLocal = <span class="string">"local"</span>.equals(job.get(<span class="string">"mapred.job.tracker"</span>, <span class="string">"local"</span>));
+    <span class="keyword">if</span> (!isLocal) {
+      reduceCopier = <span class="keyword">new</span> ReduceCopier(umbilical, job, reporter);
+      <span class="keyword">if</span> (!reduceCopier.fetchOutputs()) {
+        <span class="keyword">if</span>(reduceCopier.mergeThrowable <span class="keyword">instanceof</span> FSError) {
+          <span class="keyword">throw</span> (FSError)reduceCopier.mergeThrowable;
+        }
+        <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Task: "</span> + getTaskID() + 
+            <span class="string">" - The reduce copier failed"</span>, reduceCopier.mergeThrowable);
+      }
+    }
+</pre></td></tr></table></figure>
+
+<h3>fetchOutputs()</h3>
+<p>主要有三个家伙：LocalFSMerger，InMemFSMergeThread，GetMapEventsThread<br>GetMapEventsThread的run方法中会不断通过getMapCompletionEvents()方法从MapTask获取完成的task 事件Event<br>另外还有个是MapOutPutCopier,<br>fetchOutputs —&gt;MapOutputCopier—&gt;copyOutput—-&gt;getMapOutput—-&gt;shuffleInMemory/shuffleToDisk(将文件拷贝到内存/磁盘)<br>首先是ReduceCopier的fetchOutputs()方法，依次启动几个线程Thread：<br>MapOutputCopier<br>localFSMergerThread 本地磁盘Fs操作<br>inMemFSMergeThread 内存操作<br>merger.merge()最终都是调用的mergeQueue的merge方法，最后就是落实到Segments了<br>getMapEventsThread 其run()方法会调用</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+</pre></td><td class="code"><pre>  <span class="keyword">public</span> <span class="keyword">boolean</span> fetchOutputs() <span class="keyword">throws</span> IOException {
+      <span class="keyword">int</span> totalFailures = <span class="number">0</span>;
+      <span class="keyword">int</span>            numInFlight = <span class="number">0</span>, numCopied = <span class="number">0</span>;
+      DecimalFormat  mbpsFormat = <span class="keyword">new</span> DecimalFormat(<span class="string">"0.00"</span>);
+      <span class="keyword">final</span> Progress copyPhase = 
+        reduceTask.getProgress().phase();
+      LocalFSMerger localFSMergerThread = <span class="keyword">null</span>;
+      InMemFSMergeThread inMemFSMergeThread = <span class="keyword">null</span>;
+      GetMapEventsThread getMapEventsThread = <span class="keyword">null</span>;
+      
+      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; numMaps; i++) {
+        copyPhase.addPhase();       <span class="comment">// add sub-phase per file</span>
+      }
+      
+      copiers = <span class="keyword">new</span> ArrayList&lt;MapOutputCopier&gt;(numCopiers);
+      
+      <span class="comment">// start all the copying threads</span>
+      <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i &lt; numCopiers; i++) {
+        MapOutputCopier copier = <span class="keyword">new</span> MapOutputCopier(conf, reporter, 
+            reduceTask.getJobTokenSecret());
+        copiers.add(copier);
+        copier.start();
+      }
+</pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-25T12:22:14.000Z"><a href="/2013/10/25/mr-maptask/">10月 25 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/25/mr-maptask/">MapReduce过程中的MapTask分析</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>我们知道在Child中最终是通过调用taskFinal.run(job, umbilical); 来执行task的，这里task也是两种，这里先说说MapTask<br>依据从JobTracker获取的Action，可以有cleanupJob,cleantask,setupjob,setuptask,以及Map,当然在Reduce阶段还有reduce<br>Map分新，旧API，这里体现为runNewMapper与runOldMapper</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+</pre></td><td class="code"><pre>  <span class="annotation">@Override</span>
+  <span class="keyword">public</span> <span class="keyword">void</span> run(<span class="keyword">final</span> JobConf job, <span class="keyword">final</span> TaskUmbilicalProtocol umbilical) 
+    <span class="keyword">throws</span> IOException, ClassNotFoundException, InterruptedException {
+    <span class="keyword">this</span>.umbilical = umbilical;
+
+    <span class="comment">//与TaskTracker通信</span>
+    <span class="comment">// start thread that will handle communication with parent</span>
+    TaskReporter reporter = <span class="keyword">new</span> TaskReporter(getProgress(), umbilical,
+        jvmContext);
+    reporter.startCommunicationThread();
+    <span class="keyword">boolean</span> useNewApi = job.getUseNewMapper();
+    initialize(job, getJobID(), reporter, useNewApi);
+
+    <span class="comment">// check if it is a cleanupJobTask</span>
+    <span class="keyword">if</span> (jobCleanup) {
+      runJobCleanupTask(umbilical, reporter);
+      <span class="keyword">return</span>;
+    }
+    <span class="keyword">if</span> (jobSetup) {
+      runJobSetupTask(umbilical, reporter);
+      <span class="keyword">return</span>;
+    }
+    <span class="keyword">if</span> (taskCleanup) {
+      runTaskCleanupTask(umbilical, reporter);
+      <span class="keyword">return</span>;
+    }
+
+    <span class="keyword">if</span> (useNewApi) {
+      runNewMapper(job, splitMetaInfo, umbilical, reporter);
+    } <span class="keyword">else</span> {
+      runOldMapper(job, splitMetaInfo, umbilical, reporter);
+    }
+    done(umbilical, reporter);
+  }
+</pre></td></tr></table></figure>
+
+<p>先来看看新api吧：mapper.run(mapperContext);</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+</pre></td><td class="code"><pre><span class="annotation">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)
+  <span class="keyword">private</span> &lt;INKEY,INVALUE,OUTKEY,OUTVALUE&gt;
+  <span class="keyword">void</span> runNewMapper(<span class="keyword">final</span> JobConf job,
+                    <span class="keyword">final</span> TaskSplitIndex splitIndex,
+                    <span class="keyword">final</span> TaskUmbilicalProtocol umbilical,
+                    TaskReporter reporter
+                    ) <span class="keyword">throws</span> IOException, ClassNotFoundException,
+                             InterruptedException {
+    <span class="comment">// make a task context so we can get the classes</span>
+    org.apache.hadoop.mapreduce.TaskAttemptContext taskContext =
+      <span class="keyword">new</span> org.apache.hadoop.mapreduce.TaskAttemptContext(job, getTaskID());
+    <span class="comment">// make a mapper</span>
+    org.apache.hadoop.mapreduce.Mapper&lt;INKEY,INVALUE,OUTKEY,OUTVALUE&gt; mapper =
+      (org.apache.hadoop.mapreduce.Mapper&lt;INKEY,INVALUE,OUTKEY,OUTVALUE&gt;)
+        ReflectionUtils.newInstance(taskContext.getMapperClass(), job);
+    <span class="comment">// make the input format</span>
+    org.apache.hadoop.mapreduce.InputFormat&lt;INKEY,INVALUE&gt; inputFormat =
+      (org.apache.hadoop.mapreduce.InputFormat&lt;INKEY,INVALUE&gt;)
+        ReflectionUtils.newInstance(taskContext.getInputFormatClass(), job);
+    <span class="comment">// rebuild the input split</span>
+    org.apache.hadoop.mapreduce.InputSplit split = <span class="keyword">null</span>;
+    split = getSplitDetails(<span class="keyword">new</span> Path(splitIndex.getSplitLocation()),
+        splitIndex.getStartOffset());
+
+    org.apache.hadoop.mapreduce.RecordReader&lt;INKEY,INVALUE&gt; input =
+      <span class="keyword">new</span> NewTrackingRecordReader&lt;INKEY,INVALUE&gt;
+          (split, inputFormat, reporter, job, taskContext);
+
+    job.setBoolean(<span class="string">"mapred.skip.on"</span>, isSkipping());
+    org.apache.hadoop.mapreduce.RecordWriter output = <span class="keyword">null</span>;
+    org.apache.hadoop.mapreduce.Mapper&lt;INKEY,INVALUE,OUTKEY,OUTVALUE&gt;.Context 
+         mapperContext = <span class="keyword">null</span>;
+    <span class="keyword">try</span> {
+      Constructor&lt;org.apache.hadoop.mapreduce.Mapper.Context&gt; contextConstructor =
+        org.apache.hadoop.mapreduce.Mapper.Context.class.getConstructor
+        (<span class="keyword">new</span> Class[]{org.apache.hadoop.mapreduce.Mapper.class,
+                     Configuration.class,
+                     org.apache.hadoop.mapreduce.TaskAttemptID.class,
+                     org.apache.hadoop.mapreduce.RecordReader.class,
+                     org.apache.hadoop.mapreduce.RecordWriter.class,
+                     org.apache.hadoop.mapreduce.OutputCommitter.class,
+                     org.apache.hadoop.mapreduce.StatusReporter.class,
+                     org.apache.hadoop.mapreduce.InputSplit.class});
+
+      <span class="comment">// get an output object</span>
+      <span class="keyword">if</span> (job.getNumReduceTasks() == <span class="number">0</span>) {
+         output =
+           <span class="keyword">new</span> NewDirectOutputCollector(taskContext, job, umbilical, reporter);
+      } <span class="keyword">else</span> {
+        output = <span class="keyword">new</span> NewOutputCollector(taskContext, job, umbilical, reporter);
+      }
+
+      mapperContext = contextConstructor.newInstance(mapper, job, getTaskID(),
+                                                     input, output, committer,
+                                                     reporter, split);
+
+      input.initialize(split, mapperContext);
+      mapper.run(mapperContext);
+      input.close();
+      output.close(mapperContext);
+</pre></td></tr></table></figure>
+
+<p>新版中用户自定义的Mapper是通过最终调用contex.write()方法<br>这个contex其实是：TaskInputOutputContext</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>  <span class="javadoc">/**
+   * Generate an output key/value pair.
+   */</span>
+  <span class="keyword">public</span> <span class="keyword">void</span> write(KEYOUT key, VALUEOUT value
+                    ) <span class="keyword">throws</span> IOException, InterruptedException {
+    output.write(key, value);
+  }
+</pre></td></tr></table></figure>
+
+<p>这个output是：NewOutputCollector<K,V> 是MapTask的内部类</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+</pre></td><td class="code"><pre>  <span class="keyword">private</span> <span class="class"><span class="keyword">class</span> <span class="title">NewOutputCollector</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt;
+    <span class="keyword">extends</span> <span class="title">org</span>.<span class="title">apache</span>.<span class="title">hadoop</span>.<span class="title">mapreduce</span>.<span class="title">RecordWriter</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; {</span>
+    <span class="keyword">private</span> <span class="keyword">final</span> MapOutputCollector&lt;K,V&gt; collector;
+    <span class="keyword">private</span> <span class="keyword">final</span> org.apache.hadoop.mapreduce.Partitioner&lt;K,V&gt; partitioner;
+    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> partitions;
+
+    <span class="annotation">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)
+    NewOutputCollector(org.apache.hadoop.mapreduce.JobContext jobContext,
+                       JobConf job,
+                       TaskUmbilicalProtocol umbilical,
+                       TaskReporter reporter
+                       ) <span class="keyword">throws</span> IOException, ClassNotFoundException {
+      collector = <span class="keyword">new</span> MapOutputBuffer&lt;K,V&gt;(umbilical, job, reporter);
+      partitions = jobContext.getNumReduceTasks();
+      <span class="keyword">if</span> (partitions &gt; <span class="number">0</span>) {
+        partitioner = (org.apache.hadoop.mapreduce.Partitioner&lt;K,V&gt;)
+          ReflectionUtils.newInstance(jobContext.getPartitionerClass(), job);
+      } <span class="keyword">else</span> {
+        partitioner = <span class="keyword">new</span> org.apache.hadoop.mapreduce.Partitioner&lt;K,V&gt;() {
+          <span class="annotation">@Override</span>
+          <span class="keyword">public</span> <span class="keyword">int</span> getPartition(K key, V value, <span class="keyword">int</span> numPartitions) {
+            <span class="keyword">return</span> -<span class="number">1</span>;
+          }
+        };
+      }
+    }
+
+    <span class="annotation">@Override</span>
+    <span class="keyword">public</span> <span class="keyword">void</span> write(K key, V value) <span class="keyword">throws</span> IOException, InterruptedException {
+      collector.collect(key, value,
+                        partitioner.getPartition(key, value, partitions));
+    }
+
+    <span class="annotation">@Override</span>
+    <span class="keyword">public</span> <span class="keyword">void</span> close(TaskAttemptContext context
+                      ) <span class="keyword">throws</span> IOException,InterruptedException {
+      <span class="keyword">try</span> {
+        collector.flush();
+      } <span class="keyword">catch</span> (ClassNotFoundException cnf) {
+        <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"can't find class "</span>, cnf);
+      }
+      collector.close();
+    }
+  }
+</pre></td></tr></table></figure>
+
+<p>其write方法：</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre> <span class="annotation">@Override</span>
+    <span class="keyword">public</span> <span class="keyword">void</span> write(K key, V value) <span class="keyword">throws</span> IOException, InterruptedException {
+      collector.collect(key, value,
+                        partitioner.getPartition(key, value, partitions));
+    }
+</pre></td></tr></table></figure>
+
+<p>最终还是有到了collector，老版的Api最终是调用的Collector. 好吧MapOutputBuffer要来了，spill，ring神马滴都在这里</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-25T12:15:48.000Z"><a href="/2013/10/25/network-self/">10月 25 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/25/network-self/">自连接</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>运行中的Zookeeper宕掉之后，重启了N次，发现始终启动不来：提示address被占用</p>
+<p>于是尼玛，原来是自连接了。关键是，这个自连接据说还是合法的</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-16T11:51:08.000Z"><a href="/2013/10/16/flume-test-single-node/">10月 16 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/16/flume-test-single-node/">flume-test-single-node</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1>flume日志系统单机测试</h1>
+<p>下载：wget <a href="http://apache.fayea.com/apache-mirror/flume/1.4.0/apache-flume-1.4.0-bin.tar.gz" target="_blank">http://apache.fayea.com/apache-mirror/flume/1.4.0/apache-flume-1.4.0-bin.tar.gz</a><br>解压：tar zxvf apache-flume-1.4.0-bin.tar.gz</p>
+<h1>mv flume-conf.properties.template flume-conf.properties</h1>
+<p>内容如下</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-10T10:33:15.000Z"><a href="/2013/10/10/mapreduce-explain/">10月 10 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/10/mapreduce-explain/">MapReduce执行过程</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1>MapReduce过程</h1>
+<h2>JobClient提交作业</h2>
+<p>JobClient的静态方法runJob(jobconf)会实例化一个jc(JobClient),然后调用submitJob(job)方法，提交作业，改方法返回一个RunningJob对象<br>SubmitJob(job)调用submitJobInternal(job)，而在submitJobInternal(job)最终到jobSubmitClient.submitJob()完成(实则是调用RPC调用JobTracker. submitJob())，实际jobSubmitClient是JobSubmissionProtocol(JobTracker实现)<br>submitJobInternal()在中，还会做这些事情：<br>①    ,job.split :文件的分块相关信息，<br>②    ,job.xml：作业配置信息，Mapper,Reducer,输入输出格式实现等<br>③    ,job.jar</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre>  <span class="keyword">public</span> <span class="keyword">static</span> RunningJob runJob(JobConf job) <span class="keyword">throws</span> IOException {
+    JobClient jc = <span class="keyword">new</span> JobClient(job);
+    RunningJob rj = jc.submitJob(job);
+    <span class="keyword">try</span> {
+      <span class="keyword">if</span> (!jc.monitorAndPrintJob(job, rj)) {
+        LOG.info(<span class="string">"Job Failed: "</span> + rj.getFailureInfo());
+        <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Job failed!"</span>);
+      }
+    } <span class="keyword">catch</span> (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
+    <span class="keyword">return</span> rj;
+  }
+</pre></td></tr></table></figure>
+
+<p>submitJobInternal(job)源代码</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+</pre></td><td class="code"><pre>
+    <span class="comment">/*
+     * configure the command line options correctly on the submitting dfs
+     */</span>
+    <span class="keyword">return</span> ugi.doAs(<span class="keyword">new</span> PrivilegedExceptionAction&lt;RunningJob&gt;() {
+      <span class="keyword">public</span> RunningJob run() <span class="keyword">throws</span> FileNotFoundException, 
+      ClassNotFoundException,
+      InterruptedException,
+      IOException{
+        JobConf jobCopy = job;
+        Path jobStagingArea = JobSubmissionFiles.getStagingDir(JobClient.<span class="keyword">this</span>,
+            jobCopy);
+        JobID jobId = jobSubmitClient.getNewJobId();
+        Path submitJobDir = <span class="keyword">new</span> Path(jobStagingArea, jobId.toString());
+        jobCopy.set(<span class="string">"mapreduce.job.dir"</span>, submitJobDir.toString());
+        JobStatus status = <span class="keyword">null</span>;
+        <span class="keyword">try</span> {
+          populateTokenCache(jobCopy, jobCopy.getCredentials());
+
+          copyAndConfigureFiles(jobCopy, submitJobDir);
+
+          <span class="comment">// get delegation token for the dir</span>
+          TokenCache.obtainTokensForNamenodes(jobCopy.getCredentials(),
+                                              <span class="keyword">new</span> Path [] {submitJobDir},
+                                              jobCopy);
+
+          Path submitJobFile = JobSubmissionFiles.getJobConfPath(submitJobDir);
+          <span class="keyword">int</span> reduces = jobCopy.getNumReduceTasks();
+          InetAddress ip = InetAddress.getLocalHost();
+          <span class="keyword">if</span> (ip != <span class="keyword">null</span>) {
+            job.setJobSubmitHostAddress(ip.getHostAddress());
+            job.setJobSubmitHostName(ip.getHostName());
+          }
+          JobContext context = <span class="keyword">new</span> JobContext(jobCopy, jobId);
+
+          <span class="comment">// Check the output specification</span>
+          <span class="keyword">if</span> (reduces == <span class="number">0</span> ? jobCopy.getUseNewMapper() : 
+            jobCopy.getUseNewReducer()) {
+            org.apache.hadoop.mapreduce.OutputFormat&lt;?,?&gt; output =
+              ReflectionUtils.newInstance(context.getOutputFormatClass(),
+                  jobCopy);
+            output.checkOutputSpecs(context);
+          } <span class="keyword">else</span> {
+            jobCopy.getOutputFormat().checkOutputSpecs(fs, jobCopy);
+          }
+          
+          jobCopy = (JobConf)context.getConfiguration();
+
+          <span class="comment">// Create the splits for the job</span>
+          FileSystem fs = submitJobDir.getFileSystem(jobCopy);
+          LOG.debug(<span class="string">"Creating splits at "</span> + fs.makeQualified(submitJobDir));
+          <span class="keyword">int</span> maps = writeSplits(context, submitJobDir);
+          jobCopy.setNumMapTasks(maps);
+
+          <span class="comment">// write "queue admins of the queue to which job is being submitted"</span>
+          <span class="comment">// to job file.</span>
+          String queue = jobCopy.getQueueName();
+          AccessControlList acl = jobSubmitClient.getQueueAdmins(queue);
+          jobCopy.set(QueueManager.toFullPropertyName(queue,
+              QueueACL.ADMINISTER_JOBS.getAclName()), acl.getACLString());
+
+          <span class="comment">// Write job file to JobTracker's fs        </span>
+          FSDataOutputStream out = 
+            FileSystem.create(fs, submitJobFile,
+                <span class="keyword">new</span> FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION));
+
+          <span class="keyword">try</span> {
+            jobCopy.writeXml(out);
+          } <span class="keyword">finally</span> {
+            out.close();
+          }
+          <span class="comment">//</span>
+          <span class="comment">// Now, actually submit the job (using the submit name)</span>
+          <span class="comment">//</span>
+          printTokens(jobId, jobCopy.getCredentials());
+          status = jobSubmitClient.submitJob(
+              jobId, submitJobDir.toString(), jobCopy.getCredentials());
+          JobProfile prof = jobSubmitClient.getJobProfile(jobId);
+          <span class="keyword">if</span> (status != <span class="keyword">null</span> &amp;&amp; prof != <span class="keyword">null</span>) {
+            <span class="keyword">return</span> <span class="keyword">new</span> NetworkedJob(status, prof, jobSubmitClient);
+          } <span class="keyword">else</span> {
+            <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Could not launch job"</span>);
+          }
+        } <span class="keyword">finally</span> {
+          <span class="keyword">if</span> (status == <span class="keyword">null</span>) {
+            LOG.info(<span class="string">"Cleaning up the staging area "</span> + submitJobDir);
+            <span class="keyword">if</span> (fs != <span class="keyword">null</span> &amp;&amp; submitJobDir != <span class="keyword">null</span>)
+              fs.delete(submitJobDir, <span class="keyword">true</span>);
+          }
+        }
+      }
+    });
+  
+</pre></td></tr></table></figure>
+
+<h2>JobTracker端</h2>
+<p>JobTracker接到作业提交后，在JobTracker.submitJob()中,首先创建一个JobInProgress对象, JobInProgress对象代表一道作业，它的作用是维护这道作业的所有信息，包括作业剖析JobProfile和最近作业状态JobStatus,并登记此作业所有Tasks进任务表中,随后JobTracker通过在addJob(jobId, job)方法中调用listener.jobAdded(job);将其加入到调度队列中</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+</pre></td><td class="code"><pre>  <span class="javadoc">/**
+   * Adds a job to the jobtracker. Make sure that the checks are inplace before
+   * adding a job. This is the core job submission logic
+   * <span class="javadoctag">@param</span> jobId The id for the job submitted which needs to be added
+   */</span>
+  <span class="keyword">private</span> <span class="keyword">synchronized</span> JobStatus addJob(JobID jobId, JobInProgress job) 
+  <span class="keyword">throws</span> IOException {
+    totalSubmissions++;
+
+    <span class="keyword">synchronized</span> (jobs) {
+      <span class="keyword">synchronized</span> (taskScheduler) {
+        jobs.put(job.getProfile().getJobID(), job);
+        <span class="keyword">for</span> (JobInProgressListener listener : jobInProgressListeners) {
+          listener.jobAdded(job);
+        }
+      }
+    }
+    myInstrumentation.submitJob(job.getJobConf(), jobId);
+    job.getQueueMetrics().submitJob(job.getJobConf(), jobId);
+
+    LOG.info(<span class="string">"Job "</span> + jobId + <span class="string">" added successfully for user '"</span> 
+             + job.getJobConf().getUser() + <span class="string">"' to queue '"</span> 
+             + job.getJobConf().getQueueName() + <span class="string">"'"</span>);
+    AuditLogger.logSuccess(job.getUser(), 
+        Operation.SUBMIT_JOB.name(), jobId.toString());
+    <span class="keyword">return</span> job.getStatus();
+  }
+</pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-09T12:16:34.000Z"><a href="/2013/10/09/node/">10月 9 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/09/node/">node.js入门</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>建立一个文件first.js,添加如下代码：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>var http = require(<span class="comment">'http'); </span>
+http.createServer(<span class="keyword">function</span> (req, res) { 
+    res.writeHead(<span class="number">200</span>, {<span class="comment">'Content-Type': 'text/plain'}); </span>
+    res.<span class="keyword">end</span>(<span class="comment">'Welcome to Node.js World \n'); </span>
+}).listen(<span class="number">8080</span>, <span class="string">"127.0.0.1"</span>); 
+console.<span class="built_in">log</span>(<span class="comment">'Server running at http://127.0.0.1:8080/');</span>
+</pre></td></tr></table></figure>
+
+<p>运行：node first.js</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-09T11:39:37.000Z"><a href="/2013/10/09/mapreduce/">10月 9 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/09/mapreduce/">hbase 源代码</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>hbase源代码</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre> <span class="keyword">private</span> <span class="keyword">void</span> enableCatalogTables(String catalogTableName) {
+    <span class="keyword">if</span> (!<span class="keyword">this</span>.assignmentManager.getZKTable().isEnabledTable(catalogTableName)) {
+      <span class="keyword">this</span>.assignmentManager.setEnabledTable(catalogTableName);
+    }
+  }
+  
+</pre></td></tr></table></figure>
+
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+</pre></td><td class="code"><pre>
+    <span class="comment">/*
+     * configure the command line options correctly on the submitting dfs
+     */</span>
+    <span class="keyword">return</span> ugi.doAs(<span class="keyword">new</span> PrivilegedExceptionAction&lt;RunningJob&gt;() {
+      <span class="keyword">public</span> RunningJob run() <span class="keyword">throws</span> FileNotFoundException, 
+      ClassNotFoundException,
+      InterruptedException,
+      IOException{
+        JobConf jobCopy = job;
+        Path jobStagingArea = JobSubmissionFiles.getStagingDir(JobClient.<span class="keyword">this</span>,
+            jobCopy);
+        JobID jobId = jobSubmitClient.getNewJobId();
+        Path submitJobDir = <span class="keyword">new</span> Path(jobStagingArea, jobId.toString());
+        jobCopy.set(<span class="string">"mapreduce.job.dir"</span>, submitJobDir.toString());
+        JobStatus status = <span class="keyword">null</span>;
+        <span class="keyword">try</span> {
+          populateTokenCache(jobCopy, jobCopy.getCredentials());
+
+          copyAndConfigureFiles(jobCopy, submitJobDir);
+
+          <span class="comment">// get delegation token for the dir</span>
+          TokenCache.obtainTokensForNamenodes(jobCopy.getCredentials(),
+                                              <span class="keyword">new</span> Path [] {submitJobDir},
+                                              jobCopy);
+
+          Path submitJobFile = JobSubmissionFiles.getJobConfPath(submitJobDir);
+          <span class="keyword">int</span> reduces = jobCopy.getNumReduceTasks();
+          InetAddress ip = InetAddress.getLocalHost();
+          <span class="keyword">if</span> (ip != <span class="keyword">null</span>) {
+            job.setJobSubmitHostAddress(ip.getHostAddress());
+            job.setJobSubmitHostName(ip.getHostName());
+          }
+          JobContext context = <span class="keyword">new</span> JobContext(jobCopy, jobId);
+
+          <span class="comment">// Check the output specification</span>
+          <span class="keyword">if</span> (reduces == <span class="number">0</span> ? jobCopy.getUseNewMapper() : 
+            jobCopy.getUseNewReducer()) {
+            org.apache.hadoop.mapreduce.OutputFormat&lt;?,?&gt; output =
+              ReflectionUtils.newInstance(context.getOutputFormatClass(),
+                  jobCopy);
+            output.checkOutputSpecs(context);
+          } <span class="keyword">else</span> {
+            jobCopy.getOutputFormat().checkOutputSpecs(fs, jobCopy);
+          }
+          
+          jobCopy = (JobConf)context.getConfiguration();
+
+          <span class="comment">// Create the splits for the job</span>
+          FileSystem fs = submitJobDir.getFileSystem(jobCopy);
+          LOG.debug(<span class="string">"Creating splits at "</span> + fs.makeQualified(submitJobDir));
+          <span class="keyword">int</span> maps = writeSplits(context, submitJobDir);
+          jobCopy.setNumMapTasks(maps);
+
+          <span class="comment">// write "queue admins of the queue to which job is being submitted"</span>
+          <span class="comment">// to job file.</span>
+          String queue = jobCopy.getQueueName();
+          AccessControlList acl = jobSubmitClient.getQueueAdmins(queue);
+          jobCopy.set(QueueManager.toFullPropertyName(queue,
+              QueueACL.ADMINISTER_JOBS.getAclName()), acl.getACLString());
+
+          <span class="comment">// Write job file to JobTracker's fs        </span>
+          FSDataOutputStream out = 
+            FileSystem.create(fs, submitJobFile,
+                <span class="keyword">new</span> FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION));
+
+          <span class="keyword">try</span> {
+            jobCopy.writeXml(out);
+          } <span class="keyword">finally</span> {
+            out.close();
+          }
+          <span class="comment">//</span>
+          <span class="comment">// Now, actually submit the job (using the submit name)</span>
+          <span class="comment">//</span>
+          printTokens(jobId, jobCopy.getCredentials());
+          status = jobSubmitClient.submitJob(
+              jobId, submitJobDir.toString(), jobCopy.getCredentials());
+          JobProfile prof = jobSubmitClient.getJobProfile(jobId);
+          <span class="keyword">if</span> (status != <span class="keyword">null</span> && prof != <span class="keyword">null</span>) {
+            <span class="keyword">return</span> <span class="keyword">new</span> NetworkedJob(status, prof, jobSubmitClient);
+          } <span class="keyword">else</span> {
+            <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Could not launch job"</span>);
+          }
+        } <span class="keyword">finally</span> {
+          <span class="keyword">if</span> (status == <span class="keyword">null</span>) {
+            LOG.info(<span class="string">"Cleaning up the staging area "</span> + submitJobDir);
+            <span class="keyword">if</span> (fs != <span class="keyword">null</span> && submitJobDir != <span class="keyword">null</span>)
+              fs.delete(submitJobDir, <span class="keyword">true</span>);
+          }
+        }
+      }
+    });
+</pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-10-09T11:36:27.000Z"><a href="/2013/10/09/posabout/">10月 9 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/09/posabout/">about</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+<nav id="pagination">
+  
+  
+  <div class="clearfix"></div>
+</nav></div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜索">
+    <input type="hidden" name="q" value="site:yoursite.com">
+  </form>
+</div>
+
+  
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2013 DonganWangshi
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
