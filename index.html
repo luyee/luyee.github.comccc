@@ -48,6 +48,418 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2013-11-12T11:45:26.000Z"><a href="/2013/11/12/poscloudra/">11月 12 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/11/12/poscloudra/">Hadoop2.0 YARN cloudra4.4.0安装配置</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>1,</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre>hadoop<span class="variable">@hadoop</span>-virtual-<span class="symbol">machine:</span>~<span class="variable">$ </span>cat /etc/hostname 
+yard02
+hadoop<span class="variable">@hadoop</span>-virtual-<span class="symbol">machine:</span>~$
+</pre></td></tr></table></figure>
+
+<p>2,</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre>hadoop@hadoop-virtual-<span class="method">machine:</span>~<span class="char">$ </span>cat /etc/hosts
+<span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>	localhost
+<span class="number">127.0</span><span class="number">.1</span><span class="number">.1</span>	hadoop-virtual-machine
+
+# <span class="class">The</span> following lines are desirable for <span class="class">IPv6</span> capable hosts
+::<span class="number">1</span>     ip6-localhost ip6-loopback
+<span class="method">fe00:</span>:<span class="number">0</span> ip6-localnet
+<span class="method">ff00:</span>:<span class="number">0</span> ip6-mcastprefix
+<span class="method">ff02:</span>:<span class="number">1</span> ip6-allnodes
+<span class="method">ff02:</span>:<span class="number">2</span> ip6-allrouters
+<span class="number">192.168</span><span class="number">.137</span><span class="number">.2</span> yard02
+<span class="number">192.168</span><span class="number">.137</span><span class="number">.3</span> yard03
+<span class="number">192.168</span><span class="number">.137</span><span class="number">.4</span> yard04
+<span class="number">192.168</span><span class="number">.137</span><span class="number">.5</span> yard05
+hadoop@hadoop-virtual-<span class="method">machine:</span>~$
+</pre></td></tr></table></figure>
+
+<p>3</p>
+<p>core-site.xml —-conf/hadoop</p>
+<figure class="highlight lang-xml"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">configuration</span>&gt;</span>
+<span class="pi">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="pi">&lt;?xml-stylesheet type="text/xsl" href="configuration.xsl"?&gt;</span>
+<span class="tag">&lt;<span class="title">configuration</span>&gt;</span>
+<span class="comment">&lt;!--fs.default.name for MRV1 ,fs.defaultFS for MRV2(yarn) --&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+     <span class="tag">&lt;<span class="title">name</span>&gt;</span>fs.defaultFS<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+     <span class="tag">&lt;<span class="title">value</span>&gt;</span>hdfs://yard02<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+	<span class="tag">&lt;<span class="title">name</span>&gt;</span>fs.trash.interval<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+	<span class="tag">&lt;<span class="title">value</span>&gt;</span>10080<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+	<span class="tag">&lt;<span class="title">name</span>&gt;</span>fs.trash.checkpoint.interval<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+	<span class="tag">&lt;<span class="title">value</span>&gt;</span>10080<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">configuration</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>hdfs-site.xml</p>
+<figure class="highlight lang-xml"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">configuration</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>dfs.replication<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>3<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>hadoop.tmp.dir<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>/home/hadoop/bigdata/hadoop-2.0.0-cdh4.4.0/data/hadoop-${user.name}<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>dfs.namenode.http-address<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard02:50070<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>dfs.namenode.secondary.http-address<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard03:50090<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>dfs.webhdfs.enabled<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>true<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">configuration</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>yarn-site.xml</p>
+<figure class="highlight lang-xml"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">configuration</span>&gt;</span>
+<span class="comment">&lt;!-- Site specific YARN configuration properties --&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.resourcemanager.resource-tracker.address<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard02:8031<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.resourcemanager.address<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard02:8032<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.resourcemanager.scheduler.address<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard02:8030<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.resourcemanager.admin.address<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard02:8033<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.resourcemanager.webapp.address<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard02:8088<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">description</span>&gt;</span>Classpath for typical applications.<span class="tag">&lt;/<span class="title">description</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.application.classpath<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>$HADOOP_CONF_DIR,$HADOOP_COMMON_HOME/share/hadoop/common/*,
+    $HADOOP_COMMON_HOME/share/hadoop/common/lib/*,
+    $HADOOP_HDFS_HOME/share/hadoop/hdfs/*,$HADOOP_HDFS_HOME/share/hadoop/hdfs/lib/*,
+    $YARN_HOME/share/hadoop/yarn/*,$YARN_HOME/share/hadoop/yarn/lib/*,
+    $YARN_HOME/share/hadoop/mapreduce/*,$YARN_HOME/share/hadoop/mapreduce/lib/*<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.nodemanager.aux-services<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>mapreduce.shuffle<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.nodemanager.aux-services.mapreduce.shuffle.class<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>org.apache.hadoop.mapred.ShuffleHandler<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.nodemanager.local-dirs<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>/home/hadoop/bigdata/hadoop-2.0.0-cdh4.4.0/data/yarn/local<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.nodemanager.log-dirs<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>/home/hadoop/bigdata/hadoop-2.0.0-cdh4.4.0/data/yarn/logs<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">description</span>&gt;</span>Where to aggregate logs<span class="tag">&lt;/<span class="title">description</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.nodemanager.remote-app-log-dir<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>/home/hadoop/bigdata/hadoop-2.0.0-cdh4.4.0/data/yarn/logs<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>yarn.app.mapreduce.am.staging-dir<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>/home/hadoop/bigdata/hadoop-2.0.0-cdh4.4.0<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">configuration</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>mapred-site.xml</p>
+<figure class="highlight lang-xml"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">configuration</span>&gt;</span>  
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>  
+   <span class="tag">&lt;<span class="title">name</span>&gt;</span>mapreduce.framework.name<span class="tag">&lt;/<span class="title">name</span>&gt;</span>  
+   <span class="tag">&lt;<span class="title">value</span>&gt;</span>yarn<span class="tag">&lt;/<span class="title">value</span>&gt;</span>  
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>  
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>  
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>mapreduce.jobhistory.address<span class="tag">&lt;/<span class="title">name</span>&gt;</span>  
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard2:10020<span class="tag">&lt;/<span class="title">value</span>&gt;</span>  
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>  
+  <span class="tag">&lt;<span class="title">property</span>&gt;</span>  
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>mapreduce.jobhistory.webapp.address<span class="tag">&lt;/<span class="title">name</span>&gt;</span>  
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard02:19888<span class="tag">&lt;/<span class="title">value</span>&gt;</span>  
+  <span class="tag">&lt;/<span class="title">property</span>&gt;</span>  
+<span class="tag">&lt;/<span class="title">configuration</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>masters</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre><span class="title">yard02</span>
+<span class="title">yard03</span>
+</pre></td></tr></table></figure>
+
+<p>slaves</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="title">yard02</span>
+<span class="title">yard03</span>
+<span class="title">yard04</span>
+<span class="title">yard05</span>
+</pre></td></tr></table></figure>
+
+<p>.bashrc</p>
+<figure class="highlight lang-sh"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</pre></td><td class="code"><pre><span class="keyword">export</span> HADOOP_HOME=/home/hadoop/bigdata/hadoop-<span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>
+<span class="keyword">export</span> HADOOP_MAPRED_HOME=<span class="envvar">${HADOOP_HOME}</span>
+<span class="keyword">export</span> HADOOP_COMMON_HOME=<span class="envvar">${HADOOP_HOME}</span>
+<span class="keyword">export</span> HADOOP_HDFS_HOME=<span class="envvar">${HADOOP_HOME}</span>
+<span class="keyword">export</span> YARN_HOME=<span class="envvar">${HADOOP_HOME}</span>
+<span class="keyword">export</span> HADOOP_YARN_HOME=<span class="envvar">${HADOOP_HOME}</span>
+<span class="keyword">export</span> HADOOP_CONF_DIR=<span class="envvar">${HADOOP_HOME}</span>/etc/hadoop
+<span class="keyword">export</span> HDFS_CONF_DIR=<span class="envvar">${HADOOP_HOME}</span>/etc/hadoop
+<span class="keyword">export</span> YARN_CONF_DIR=<span class="envvar">${HADOOP_HOME}</span>/etc/hadoop
+<span class="keyword">export</span> PATH=$PATH:$HOME/bin:$JAVA_HOME/bin:$HADOOP_HOME/sbin
+</pre></td></tr></table></figure>
+
+<p>同步个配置文件</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>scp  -r /home/hadoop/bigdata/hadoop-<span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/* hadoop<span class="variable">@yard03</span><span class="symbol">:/home/hadoop/bigdata/hadoop-</span><span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/
+scp  -r /home/hadoop/bigdata/hadoop-<span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/* hadoop<span class="variable">@yard04</span><span class="symbol">:/home/hadoop/bigdata/hadoop-</span><span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/
+scp  -r /home/hadoop/bigdata/hadoop-<span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/* hadoop<span class="variable">@yard05</span><span class="symbol">:/home/hadoop/bigdata/hadoop-</span><span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/
+
+scp /home/hadoop/.bashrc hadoop<span class="variable">@yard03</span><span class="symbol">:/home/hadoop</span>
+scp /home/hadoop/.bashrc hadoop<span class="variable">@yard04</span><span class="symbol">:/home/hadoop</span>
+scp /home/hadoop/.bashrc hadoop<span class="variable">@yard05</span><span class="symbol">:/home/hadoop</span>
+</pre></td></tr></table></figure>
+
+<p>关于ssh无密码还是这个屡试不爽</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>ssh-keygen -t rsa
+cp id_rsa.pub authorized_keys <span class="regexp">//</span>本地也要哦
+ssh localhost <span class="regexp">//</span>确保本地可以无密码登陆
+
+scp authorized_keys  hadoop<span class="property">@yard03</span>:<span class="regexp">/home/hadoop/</span>.ssh
+scp authorized_keys  hadoop<span class="property">@yard04</span>:<span class="regexp">/home/hadoop/</span>.ssh
+scp authorized_keys  hadoop<span class="property">@yard05</span>:<span class="regexp">/home/hadoop/</span>.ssh
+</pre></td></tr></table></figure>
+
+<p>这个启动基本在sbin目录了，<br>格式化：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="title">hadoop</span> namenode -format
+</pre></td></tr></table></figure>
+
+<p>启动</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="operator"><span class="keyword">start</span>-<span class="keyword">all</span>.sh
+</pre></td></tr></table></figure>
+
+<p>启动hdfs：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="operator"><span class="keyword">start</span>-dfs.sh
+</pre></td></tr></table></figure>
+
+<p>启动mapreduce</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="operator"><span class="keyword">start</span>-yarn.sh
+</pre></td></tr></table></figure>
+
+<p>启动historyserver</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>mr-jobhistory-daemon.sh <span class="operator"><span class="keyword">start</span> historyserver
+</pre></td></tr></table></figure>
+
+<p>访问：<br><a href="http://yard02:50070/" target="_blank">http://yard02:50070/</a><br><a href="http://yard03:50090" target="_blank">http://yard03:50090</a><br><a href="http://yard02:8088/cluster" target="_blank">http://yard02:8088/cluster</a> </p>
+<p><a href="http://blog.csdn.net/qiaochao911/article/details/9143303" target="_blank">http://blog.csdn.net/qiaochao911/article/details/9143303</a></p>
+<p><a href="http://blog.javachen.com/hadoop/2013/03/24/manual-install-Cloudera-Hadoop-CDH/" target="_blank">http://blog.javachen.com/hadoop/2013/03/24/manual-install-Cloudera-Hadoop-CDH/</a></p>
+<p><a href="http://archive.cloudera.com/cdh4/cdh/4/" target="_blank">http://archive.cloudera.com/cdh4/cdh/4/</a></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2013-10-29T10:40:00.000Z"><a href="/2013/10/29/mapreduce-shuffle/">10月 29 2013</a></time>
       
       
