@@ -328,6 +328,138 @@ export <span class="constant">PATH</span>=<span class="variable">$PATH</span><sp
     <header>
       
         <div class="icon"></div>
+        <time datetime="2013-11-19T00:58:16.000Z"><a href="/2013/11/19/hbase/">11月 19 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/11/19/hbase/">hbase--CHD4.4.0手动安装</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>cloudera HBase CDH4.4.0安装<br>HBase安装在yard02,yard03,yard04,yardo5上。<br>上传hbase-0.94.6-cdh4.4.0.tar.gz到yard02的/home/hadoop/bigdata目录解压<br>配置hbase-site.xml</p>
+<figure class="highlight lang-xml"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">configuration</span>&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>hbase.rootdir<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>hdfs://yard02:9000/hbase-${user.name}<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>hbase.cluster.distributed<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>true<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>hbase.tmp.dir<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>/home/hadoop/bigdata/hbase-0.94.6-cdh4.4.0/data/hbase-${user.name}<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>hbase.zookeeper.quorum<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard02,yard03,yard04<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">configuration</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>配置regionservers</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/hbase-</span><span class="number">0</span>.<span class="number">94.6</span>-cdh4.<span class="number">4.0</span>/conf<span class="variable">$ </span>cat regionservers 
+yard02
+yard03
+yard04
+yard05
+</pre></td></tr></table></figure>
+
+<p>环境变量配置hbase-env.sh</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre><span class="reserved">export</span> JAVA_HOME=<span class="regexp">/usr/local/</span>jdk1<span class="number">.7</span><span class="number">.0</span>_21
+exportHBASE_MANAGES_ZK=<span class="literal">false</span>(使用自带)/<span class="literal">true</span>（使用独立的Zk）
+</pre></td></tr></table></figure>
+
+<p>拷贝之其他机器：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre>scp  -r /home/hadoop/bigdata/hadoop-<span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/* hadoop<span class="variable">@yard03</span><span class="symbol">:/home/hadoop/bigdata/hadoop-</span><span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/
+scp  -r /home/hadoop/bigdata/hadoop-<span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/* hadoop<span class="variable">@yard04</span><span class="symbol">:/home/hadoop/bigdata/hadoop-</span><span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/
+scp  -r /home/hadoop/bigdata/hadoop-<span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/* hadoop<span class="variable">@yard05</span><span class="symbol">:/home/hadoop/bigdata/hadoop-</span><span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/
+</pre></td></tr></table></figure>
+
+<p>附hadoop等环境变量</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre>export <span class="class">JAVA_HOME</span>=/usr/local/jdk1<span class="number">.7</span><span class="number">.0</span>_21
+export <span class="class">JRE_HOME</span>=/usr/local/jdk1<span class="number">.7</span><span class="number">.0</span>_21/jre 
+export <span class="class">CLASSPATH</span>=.:<span class="char">$J</span>AVA_HOME/<span class="method">lib:</span><span class="char">$J</span>RE_HOME/<span class="method">lib:</span><span class="char">$C</span>LASSPATH 
+export <span class="class">PATH</span>=<span class="char">$J</span>AVA_HOME/<span class="method">bin:</span><span class="char">$J</span>RE_HOME/<span class="method">bin:</span><span class="char">$P</span>ATH
+<span class="symbol">#hadoop</span>
+export <span class="class">HADOOP_HOME</span>=/home/hadoop/bigdata/hadoop-<span class="number">2.0</span><span class="number">.0</span>-cdh4<span class="number">.4</span><span class="number">.0</span>
+export <span class="class">HADOOP_MAPRED_HOME</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}
+export <span class="class">HADOOP_COMMON_HOME</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}
+export <span class="class">HADOOP_HDFS_HOME</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}
+export <span class="class">YARN_HOME</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}
+export <span class="class">HADOOP_YARN_HOME</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}
+export <span class="class">HADOOP_CONF_DIR</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}/etc/hadoop
+export <span class="class">HDFS_CONF_DIR</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}/etc/hadoop
+export <span class="class">YARN_CONF_DIR</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}/etc/hadoop
+export <span class="class">PATH</span>=<span class="char">$P</span>ATH:<span class="char">$H</span>OME/<span class="method">bin:</span><span class="char">$J</span>AVA_HOME/<span class="method">bin:</span><span class="char">$H</span>ADOOP_HOME/sbin
+</pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2013-11-12T11:45:26.000Z"><a href="/2013/11/12/poscloudra/">11月 12 2013</a></time>
       
       
@@ -2305,53 +2437,6 @@ scp authorized_keys  hadoop<span class="property">@yard05</span>:<span class="re
     <span class="keyword">return</span> job.getStatus();
   }
 </pre></td></tr></table></figure>
-
-      
-    </div>
-    <footer>
-      
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
-  <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2013-10-09T12:16:34.000Z"><a href="/2013/10/09/node/">10月 9 2013</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2013/10/09/node/">node.js入门</a></h1>
-  
-
-    </header>
-    <div class="entry">
-      
-        <p>建立一个文件first.js,添加如下代码：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre>1
-2
-3
-4
-5
-6
-</pre></td><td class="code"><pre>var http = require(<span class="comment">'http'); </span>
-http.createServer(<span class="keyword">function</span> (req, res) { 
-    res.writeHead(<span class="number">200</span>, {<span class="comment">'Content-Type': 'text/plain'}); </span>
-    res.<span class="keyword">end</span>(<span class="comment">'Welcome to Node.js World \n'); </span>
-}).listen(<span class="number">8080</span>, <span class="string">"127.0.0.1"</span>); 
-console.<span class="built_in">log</span>(<span class="comment">'Server running at http://127.0.0.1:8080/');</span>
-</pre></td></tr></table></figure>
-
-<p>运行：node first.js</p>
 
       
     </div>

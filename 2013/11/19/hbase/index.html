@@ -1,0 +1,236 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>hbase--CHD4.4.0手动安装 | DonganWangshi</title>
+  <meta name="author" content="DonganWangshi">
+  
+  <meta name="description" content="cloudera HBase CDH4.4.0安装HBase安装在yard02,yard03,yard04,yardo5上。上传hbase-0.94.6-cdh4.4.0.tar.gz到yard02的/home/hadoop/bigdata目录解压配置hbase-site.xml
+1
+2
+3
+4
+5">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="hbase--CHD4.4.0手动安装"/>
+  <meta property="og:site_name" content="DonganWangshi"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="DonganWangshi" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">DonganWangshi</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-11-19T00:58:16.000Z"><a href="/2013/11/19/hbase/">11月 19 2013</a></time>
+      
+      
+  
+    <h1 class="title">hbase--CHD4.4.0手动安装</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>cloudera HBase CDH4.4.0安装<br>HBase安装在yard02,yard03,yard04,yardo5上。<br>上传hbase-0.94.6-cdh4.4.0.tar.gz到yard02的/home/hadoop/bigdata目录解压<br>配置hbase-site.xml</p>
+<figure class="highlight lang-xml"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">configuration</span>&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>hbase.rootdir<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>hdfs://yard02:9000/hbase-${user.name}<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>hbase.cluster.distributed<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>true<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>hbase.tmp.dir<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>/home/hadoop/bigdata/hbase-0.94.6-cdh4.4.0/data/hbase-${user.name}<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;<span class="title">property</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">name</span>&gt;</span>hbase.zookeeper.quorum<span class="tag">&lt;/<span class="title">name</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">value</span>&gt;</span>yard02,yard03,yard04<span class="tag">&lt;/<span class="title">value</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">property</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">configuration</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>配置regionservers</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/hbase-</span><span class="number">0</span>.<span class="number">94.6</span>-cdh4.<span class="number">4.0</span>/conf<span class="variable">$ </span>cat regionservers 
+yard02
+yard03
+yard04
+yard05
+</pre></td></tr></table></figure>
+
+<p>环境变量配置hbase-env.sh</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre><span class="reserved">export</span> JAVA_HOME=<span class="regexp">/usr/local/</span>jdk1<span class="number">.7</span><span class="number">.0</span>_21
+exportHBASE_MANAGES_ZK=<span class="literal">false</span>(使用自带)/<span class="literal">true</span>（使用独立的Zk）
+</pre></td></tr></table></figure>
+
+<p>拷贝之其他机器：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre>scp  -r /home/hadoop/bigdata/hadoop-<span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/* hadoop<span class="variable">@yard03</span><span class="symbol">:/home/hadoop/bigdata/hadoop-</span><span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/
+scp  -r /home/hadoop/bigdata/hadoop-<span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/* hadoop<span class="variable">@yard04</span><span class="symbol">:/home/hadoop/bigdata/hadoop-</span><span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/
+scp  -r /home/hadoop/bigdata/hadoop-<span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/* hadoop<span class="variable">@yard05</span><span class="symbol">:/home/hadoop/bigdata/hadoop-</span><span class="number">2.0</span>.<span class="number">0</span>-cdh4.<span class="number">4.0</span>/
+</pre></td></tr></table></figure>
+
+<p>附hadoop等环境变量</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre>export <span class="class">JAVA_HOME</span>=/usr/local/jdk1<span class="number">.7</span><span class="number">.0</span>_21
+export <span class="class">JRE_HOME</span>=/usr/local/jdk1<span class="number">.7</span><span class="number">.0</span>_21/jre 
+export <span class="class">CLASSPATH</span>=.:<span class="char">$J</span>AVA_HOME/<span class="method">lib:</span><span class="char">$J</span>RE_HOME/<span class="method">lib:</span><span class="char">$C</span>LASSPATH 
+export <span class="class">PATH</span>=<span class="char">$J</span>AVA_HOME/<span class="method">bin:</span><span class="char">$J</span>RE_HOME/<span class="method">bin:</span><span class="char">$P</span>ATH
+<span class="symbol">#hadoop</span>
+export <span class="class">HADOOP_HOME</span>=/home/hadoop/bigdata/hadoop-<span class="number">2.0</span><span class="number">.0</span>-cdh4<span class="number">.4</span><span class="number">.0</span>
+export <span class="class">HADOOP_MAPRED_HOME</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}
+export <span class="class">HADOOP_COMMON_HOME</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}
+export <span class="class">HADOOP_HDFS_HOME</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}
+export <span class="class">YARN_HOME</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}
+export <span class="class">HADOOP_YARN_HOME</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}
+export <span class="class">HADOOP_CONF_DIR</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}/etc/hadoop
+export <span class="class">HDFS_CONF_DIR</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}/etc/hadoop
+export <span class="class">YARN_CONF_DIR</span>=<span class="char">${</span><span class="class">HADOOP_HOME</span>}/etc/hadoop
+export <span class="class">PATH</span>=<span class="char">$P</span>ATH:<span class="char">$H</span>OME/<span class="method">bin:</span><span class="char">$J</span>AVA_HOME/<span class="method">bin:</span><span class="char">$H</span>ADOOP_HOME/sbin
+</pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer>
+      
+        
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜索">
+    <input type="hidden" name="q" value="site:yoursite.com">
+  </form>
+</div>
+
+  
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2013 DonganWangshi
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

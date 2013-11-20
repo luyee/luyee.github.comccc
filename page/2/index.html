@@ -48,6 +48,53 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2013-10-09T12:16:34.000Z"><a href="/2013/10/09/node/">10月 9 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/10/09/node/">node.js入门</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>建立一个文件first.js,添加如下代码：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>var http = require(<span class="comment">'http'); </span>
+http.createServer(<span class="keyword">function</span> (req, res) { 
+    res.writeHead(<span class="number">200</span>, {<span class="comment">'Content-Type': 'text/plain'}); </span>
+    res.<span class="keyword">end</span>(<span class="comment">'Welcome to Node.js World \n'); </span>
+}).listen(<span class="number">8080</span>, <span class="string">"127.0.0.1"</span>); 
+console.<span class="built_in">log</span>(<span class="comment">'Server running at http://127.0.0.1:8080/');</span>
+</pre></td></tr></table></figure>
+
+<p>运行：node first.js</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2013-10-09T11:39:37.000Z"><a href="/2013/10/09/mapreduce/">10月 9 2013</a></time>
       
       
