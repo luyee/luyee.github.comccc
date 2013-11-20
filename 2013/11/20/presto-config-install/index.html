@@ -1,0 +1,282 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>facebook presto安装与配置 CDH4.4 | DonganWangshi</title>
+  <meta name="author" content="DonganWangshi">
+  
+  <meta name="description" content="下载解压
+1
+2
+3
+4
+hadoop@yard02:~/bigdata/presto-server-0.52/$ 
+wget http://search.maven.org/remotecontent?filepath=com/facebook/presto/presto-server/0.52/">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="facebook presto安装与配置 CDH4.4"/>
+  <meta property="og:site_name" content="DonganWangshi"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="DonganWangshi" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">DonganWangshi</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-11-20T11:51:40.000Z"><a href="/2013/11/20/presto-config-install/">11月 20 2013</a></time>
+      
+      
+  
+    <h1 class="title">facebook presto安装与配置 CDH4.4</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3>下载解压</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre>hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/presto-server-</span><span class="number">0</span>.<span class="number">52</span>/<span class="variable">$ </span>
+wget <span class="symbol">http:</span>/<span class="regexp">/search.maven.org/remotecontent</span><span class="number">?f</span>ilepath=com/facebook/presto/presto-server/<span class="number">0</span>.<span class="number">52</span>/presto-server-<span class="number">0</span>.<span class="number">52</span>.tar.gz
+hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/presto-server-</span><span class="number">0</span>.<span class="number">52</span>/<span class="variable">$ </span>tar zxvf presto-server-<span class="number">0</span>.<span class="number">52</span>.tar.gz
+hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/presto-server-</span><span class="number">0</span>.<span class="number">52</span>/etc<span class="variable">$ </span>cd presto-server-<span class="number">0</span>.<span class="number">52</span>/
+</pre></td></tr></table></figure>
+
+<h3>hadoop@yard02:~/bigdata/presto-server-0.52/etc$ touch node.properties</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre>hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/presto-server-</span><span class="number">0</span>.<span class="number">52</span>/etc<span class="variable">$ </span>cat node.properties 
+node.environment=production
+node.id=ffffffff-ffff-ffff-ffff-ffffffffffff
+node.data-dir=<span class="regexp">/home/hadoop</span><span class="regexp">/bigdata/presto</span>-server-<span class="number">0</span>.<span class="number">52</span>/data
+</pre></td></tr></table></figure>
+
+<h3>hadoop@yard02:~/bigdata/presto-server-0.52/etc$ touch jvm.config</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+</pre></td><td class="code"><pre>hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/presto-server-</span><span class="number">0</span>.<span class="number">52</span>/etc<span class="variable">$ </span>cat jvm.config 
+-server
+-<span class="constant">Xmx16G</span>
+-<span class="constant">XX</span><span class="symbol">:+UseConcMarkSweepGC</span>
+-<span class="constant">XX</span><span class="symbol">:+ExplicitGCInvokesConcurrent</span>
+-<span class="constant">XX</span><span class="symbol">:+CMSClassUnloadingEnabled</span>
+-<span class="constant">XX</span><span class="symbol">:+AggressiveOpts</span>
+-<span class="constant">XX</span><span class="symbol">:+HeapDumpOnOutOfMemoryError</span>
+-<span class="constant">XX</span><span class="symbol">:OnOutOfMemoryError=kill</span> -<span class="number">9</span> %p
+-<span class="constant">XX</span><span class="symbol">:PermSize=</span><span class="number">150</span>M
+-<span class="constant">XX</span><span class="symbol">:MaxPermSize=</span><span class="number">150</span>M
+-<span class="constant">XX</span><span class="symbol">:ReservedCodeCacheSize=</span><span class="number">150</span>M
+</pre></td></tr></table></figure>
+
+<h3>hadoop@yard02:~/bigdata/presto-server-0.52/etc$ touch config.properties</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre>hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/presto-server-</span><span class="number">0</span>.<span class="number">52</span>/etc<span class="variable">$ </span>cat config.properties 
+coordinator=<span class="keyword">true</span>
+datasources=jmx,hive
+http-server.http.port=<span class="number">8080</span>
+presto-metastore.db.type=h2
+presto-metastore.db.filename=<span class="regexp">/home/hadoop</span><span class="regexp">/bigdata/presto</span>-server-<span class="number">0</span>.<span class="number">52</span>/data/db/<span class="constant">MetaStore</span>
+task.max-memory=<span class="number">1</span>GB
+discovery-server.enabled=<span class="keyword">true</span>
+discovery.uri=<span class="symbol">http:</span>/<span class="regexp">/yard02:8080
+</pre></td></tr></table></figure>
+
+<h3>hadoop@yard02:~/bigdata/presto-server-0.52/etc$ touch log.properties</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/presto-server-</span><span class="number">0</span>.<span class="number">52</span>/etc<span class="variable">$ </span>cat log.properties 
+com.facebook.presto=<span class="constant">DEBUG</span>
+</pre></td></tr></table></figure>
+
+<h3>hadoop@yard02:~/bigdata/presto-server-0.52/etc/catalog$ touch jmx.properties</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/presto-server-</span><span class="number">0</span>.<span class="number">52</span>/etc<span class="variable">$ </span>cat catalog/jmx.properties 
+connector.name=jmx
+</pre></td></tr></table></figure>
+
+<p>hadoop@yard02:~/bigdata/presto-server-0.52/etc/catalog$ touch hive.properties</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre>##<span class="symbol">#hadoop</span>@<span class="method">yard02:</span>~/bigdata/presto-server-<span class="number">0.52</span>/etc<span class="char">$ </span>cat catalog/hive.properties 
+connector.name=hive-cdh4
+hive.metastore.uri=<span class="method">thrift:</span>//<span class="method">yard02:</span><span class="number">9083</span>
+</pre></td></tr></table></figure>
+
+<h3>presto 客户端</h3>
+<p>下载： <a href="http://search.maven.org/remotecontent?filepath=com/facebook/presto/presto-server/0.52/presto-server-0.52.tar.gz" target="_blank">http://search.maven.org/remotecontent?filepath=com/facebook/presto/presto-server/0.52/presto-server-0.52.tar.gz</a></p>
+<p>重命名：mv  presto-cli-0.52-executable.jar  presto</p>
+<h3>TEST 试试手感</h3>
+<p>启动：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>hadoop<span class="variable">@yard02</span><span class="symbol">:~/bigdata/presto-server-</span><span class="number">0</span>.<span class="number">52</span>/bin<span class="variable">$ </span>.<span class="regexp">/launcher start
+</pre></td></tr></table></figure>
+
+<p>需要先启动hiveserver</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="string">.</span><span class="comment">/hive</span> <span class="literal">-</span><span class="literal">-</span><span class="comment">service</span> <span class="comment">hiveserver</span> <span class="literal">-</span><span class="comment">p</span> <span class="comment">9083
+</pre></td></tr></table></figure>
+
+<p>客户端链接：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre></td><td class="code"><pre><span class="comment">hadoop@yard02:~/bigdata/presto</span>-<span class="comment">server</span>-<span class="comment">0</span>.<span class="comment">52/bin$</span> <span class="string">.</span><span class="comment">/presto</span> <span class="literal">-</span><span class="literal">-</span><span class="comment">server</span> <span class="comment">localhost:8080</span> <span class="literal">-</span><span class="literal">-</span><span class="comment">catalog</span> <span class="comment">hive</span> <span class="literal">-</span><span class="literal">-</span><span class="comment">schema</span> <span class="comment">default</span>
+<span class="comment">presto:default</span>&gt; <span class="comment">list</span>
+             <span class="literal">-</span>&gt; <span class="comment">;</span>
+<span class="comment">Query</span> <span class="comment">20131120_114948_00002_3frqf</span> <span class="comment">failed:</span> <span class="comment">line</span> <span class="comment">1:1:</span> <span class="comment">no</span> <span class="comment">viable</span> <span class="comment">alternative</span> <span class="comment">at</span> <span class="comment">input</span> <span class="comment">'list'</span>
+<span class="comment">list</span>
+
+<span class="comment">presto:default</span>&gt; <span class="comment">show</span> <span class="comment">tables;</span>
+ <span class="comment">Table</span>  
+<span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span><span class="literal">-</span>
+ <span class="comment">mytest</span> 
+<span class="comment">(1</span> <span class="comment">row)</span>
+
+<span class="comment">Query</span> <span class="comment">20131120_114955_00003_3frqf</span>, <span class="comment">FINISHED</span>, <span class="comment">1</span> <span class="comment">node</span>
+<span class="comment">Splits:</span> <span class="comment">2</span> <span class="comment">total</span>, <span class="comment">2</span> <span class="comment">done</span> <span class="comment">(100</span>.<span class="comment">00%)</span>
+<span class="comment">0:00</span> <span class="title">[</span><span class="comment">1</span> <span class="comment">rows</span>, <span class="comment">23B</span>] <span class="title">[</span><span class="comment">2</span> <span class="comment">rows/s</span>, <span class="comment">68B/s</span>]
+
+<span class="comment">presto:default</span>&gt;
+</pre></td></tr></table></figure>
+
+<h3>参考链接：</h3>
+<p><a href="http://prestodb.io/docs/current/installation/deployment.html" target="_blank">http://prestodb.io/docs/current/installation/deployment.html</a></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜索">
+    <input type="hidden" name="q" value="site:yoursite.com">
+  </form>
+</div>
+
+  
+
+  
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2013 DonganWangshi
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
