@@ -48,6 +48,289 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2013-12-02T12:08:08.000Z"><a href="/2013/12/02/storm-a-real-life-example/">12月 2 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/12/02/storm-a-real-life-example/">storm A Real-life Example</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h3>1，install zeromq</h3>
+<p>期间可能出现：configure: error: cannot link with -luuid, install uuid-dev.<br>因此可以先安装</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>su<span class="operator"><span class="keyword">do</span> apt-<span class="keyword">get</span> install uuid*
+sudo apt-<span class="keyword">get</span> install libtool
+</pre></td></tr></table></figure>
+
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre>wget http://download<span class="preprocessor">.zeromq</span><span class="preprocessor">.org</span>/zeromq-<span class="number">2.2</span><span class="number">.0</span><span class="preprocessor">.tar</span><span class="preprocessor">.gz</span>
+tar zxf zeromq-<span class="number">2.2</span><span class="number">.0</span><span class="preprocessor">.tar</span><span class="preprocessor">.gz</span> 
+cd zeromq-<span class="number">2.2</span><span class="number">.0</span>
+./configure
+</pre></td></tr></table></figure>
+
+<h3>2， install git</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="title">git</span>-<span class="number">1.8</span><span class="number">.3</span>.tar.gz
+<span class="title">tar</span> zxvf git-<span class="number">1.8</span><span class="number">.3</span>.tar.gz
+<span class="title">cd</span> git-<span class="number">1.8</span><span class="number">.3</span>
+<span class="title">make</span> && sudo make install
+</pre></td></tr></table></figure>
+
+<h3>3，install jzmq</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre>git clone git://github<span class="preprocessor">.com</span>/nathanmarz/jzmq<span class="preprocessor">.git</span>
+./autogen<span class="preprocessor">.sh</span>
+./configure
+make && sudo make install
+</pre></td></tr></table></figure>
+
+<h3>4， install storm</h3>
+<h4>4.1,download zip unzip</h4>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre>wget http://cloud<span class="preprocessor">.github</span><span class="preprocessor">.com</span>/downloads/nathanmarz/storm/storm-<span class="number">0.8</span><span class="number">.1</span><span class="preprocessor">.zip</span>
+unzip storm-<span class="number">0.8</span><span class="number">.1</span><span class="preprocessor">.zip</span>
+cd storm-<span class="number">0.8</span><span class="number">.1</span>
+</pre></td></tr></table></figure>
+
+<h4>4.2,配置Storm变量</h4>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>vim /etc/profile
+   <span class="comment">#    storm </span>
+export <span class="constant">STORM_HOME</span>=<span class="regexp">/home/hadoop</span><span class="regexp">/bigdata/storm</span>-<span class="number">0</span>.<span class="number">8.1</span>/
+export <span class="constant">PATH</span>=<span class="variable">$PATH</span><span class="symbol">:</span><span class="variable">$STORM_HOME</span>/bin
+. <span class="regexp">/etc/profile</span>
+</pre></td></tr></table></figure>
+
+<h4>4.3,storm的配置:storm.yaml</h4>
+<p>关于这个配置文件实在的有点蛋疼，居然空格都包含在内，如果你在“:”号后面没有空格那就<br>蛋疼了，不断折腾之后，这个勉强可以配置好了。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+</pre></td><td class="code"><pre>storm<span class="variable">.zookeeper</span><span class="variable">.servers</span>: 
+     - <span class="string">"127.0.0.1"</span>
+storm<span class="variable">.zookeeper</span><span class="variable">.port</span>: <span class="number">2182</span>
+nimbus<span class="variable">.host</span>: <span class="string">"127.0.0.1"</span>
+storm<span class="variable">.local</span><span class="variable">.dir</span>: <span class="string">"/home/hadoop/bigdata/storm-0.8.1/data/stor_mdir"</span>
+supervisor<span class="variable">.slots</span><span class="variable">.ports</span>:
+  - <span class="number">6700</span>
+  - <span class="number">6701</span>
+  - <span class="number">6702</span>
+  - <span class="number">6703</span>
+
+ui<span class="variable">.port</span>: <span class="number">10010</span>
+</pre></td></tr></table></figure>
+
+<h3>5,storm-starter</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre>svn co https:<span class="comment">//github.com/nathanmarz/storm-starter/trunk storm-starter</span>
+cd storm-starter
+mvn -f m2-pom.xml <span class="package"><span class="keyword">package</span>
+<span class="title">cp</span> <span class="title">m2</span>-<span class="title">pom</span>.<span class="title">xml</span> <span class="title">pom</span>.<span class="title">xml</span>
+</pre></td></tr></table></figure>
+
+<h4>5.1，需要对pom文件的依赖做相应修改，注释掉：</h4>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>&lt;!--
+<span class="xml"><span class="tag">&lt;<span class="title">repository</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">id</span>&gt;</span>twitter4j<span class="tag">&lt;/<span class="title">id</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">url</span>&gt;</span>http://twitter4j.org/maven2<span class="tag">&lt;/<span class="title">url</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">repository</span>&gt;</span>
+--&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>并将</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">dependency</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.twitter4j<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>twitter4j-core<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">version</span>&gt;</span>2.2.6-SNAPSHOT<span class="tag">&lt;/<span class="title">version</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">dependency</span>&gt;</span>
+<span class="tag">&lt;<span class="title">dependency</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.twitter4j<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>twitter4j-stream<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">version</span>&gt;</span>2.2.6-SNAPSHOT<span class="tag">&lt;/<span class="title">version</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">dependency</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>改为</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">dependency</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.twitter4j<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>twitter4j-core<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">version</span>&gt;</span>2.2.6<span class="tag">&lt;/<span class="title">version</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">dependency</span>&gt;</span>
+<span class="tag">&lt;<span class="title">dependency</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.twitter4j<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>twitter4j-stream<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">version</span>&gt;</span>2.2.6<span class="tag">&lt;/<span class="title">version</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">dependency</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>也可以参考参考网上的，改为</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">dependency</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.twitter4j<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>twitter4j-core<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">version</span>&gt;</span>［2.2,)<span class="tag">&lt;/<span class="title">version</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">dependency</span>&gt;</span>
+<span class="tag">&lt;<span class="title">dependency</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.twitter4j<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>twitter4j-stream<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">version</span>&gt;</span>［2.2,)<span class="tag">&lt;/<span class="title">version</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">dependency</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>原因是：作者使用的是twitter的库，注释掉后不存在2.2.6.snapshot版本的相应依赖。</p>
+<h3>5.2，编译storm-starter：</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="title">mvn</span> -f m2-pom.xml package
+</pre></td></tr></table></figure>
+
+<p>如果是生成eclipse工程：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre><span class="keyword">cp</span> m2-pom<span class="preprocessor">.xml</span> pom<span class="preprocessor">.xml</span>
+mvn eclipse:eclipse
+</pre></td></tr></table></figure>
+
+<h3>6，NodeJs+express环境</h3>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre>wget http:<span class="regexp">//</span>nodejs.org<span class="regexp">/dist/v0.10.22/</span>node-v0<span class="number">.10</span><span class="number">.22</span>-linux-x64.tar.gz
+tar zxvf node-v0<span class="number">.10</span><span class="number">.22</span>-linux-x64.tar.gz
+cd node-v0<span class="number">.10</span><span class="number">.22</span>/
+<span class="reserved">export</span> NODE_HOME=<span class="regexp">/usr/local/</span>node-v0<span class="number">.10</span><span class="number">.22</span>-linux-x64
+<span class="reserved">export</span> PATH=$PATH:$NODE_HOME/bin
+<span class="reserved">export</span> NODE_PATH=$NODE_HOME<span class="regexp">/lib/</span>node_modules
+. <span class="regexp">/etc/</span>profile(source )
+<span class="comment">#express</span>
+npm install -g express(sudo su - 必须root??)
+</pre></td></tr></table></figure>
+
+<h3>7,A Real-life Example install</h3>
+<h4>7.1 install Redis</h4>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="string">.</span><span class="comment">/redis</span>-<span class="comment">server</span> <span class="string">.</span><span class="string">.</span><span class="comment">/redis</span>.<span class="comment">conf
+</pre></td></tr></table></figure>
+
+<h4>7.2 打包</h4>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre><span class="title">svn</span> co https://github.com/storm-book/examples-ch06-real-life-app/trunk 
+<span class="title">cd</span> trunk/
+<span class="title">mvn</span> package
+</pre></td></tr></table></figure>
+
+<h4>7.3 启动应用</h4>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre><span class="title">java</span> -jar target/storm-analytics-<span class="number">0.0</span><span class="number">.1</span>-jar-with-dependencies.jar 
+<span class="title">node</span> webapp/app.js
+</pre></td></tr></table></figure>
+
+<h4>7.4 测试功能</h4>
+<ul>
+<li><p>①主页：<a href="http://localhost:3000/" target="_blank">http://localhost:3000/</a></p>
+</li>
+<li><p>②产品页：<a href="http://localhost:3000/product/:id，显示了一个与特定产品相关的信息" target="_blank">http://localhost:3000/product/:id，显示了一个与特定产品相关的信息</a></p>
+</li>
+<li><p>③统计信息页：<a href="http://localhost:3000/product/:id/stats，浏览该产品的用户，浏览过的其他产品的统计信息（次数）" target="_blank">http://localhost:3000/product/:id/stats，浏览该产品的用户，浏览过的其他产品的统计信息（次数）</a></p>
+</li>
+</ul>
+<p>参考链接：<a href="http://shop.oreilly.com/product/0636920024835.do" target="_blank">http://shop.oreilly.com/product/0636920024835.do</a></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2013-11-20T11:51:40.000Z"><a href="/2013/11/20/presto-config-install/">11月 20 2013</a></time>
       
       
@@ -2129,314 +2412,6 @@ scp authorized_keys  hadoop<span class="property">@yard05</span>:<span class="re
 <p>下载：wget <a href="http://apache.fayea.com/apache-mirror/flume/1.4.0/apache-flume-1.4.0-bin.tar.gz" target="_blank">http://apache.fayea.com/apache-mirror/flume/1.4.0/apache-flume-1.4.0-bin.tar.gz</a><br>解压：tar zxvf apache-flume-1.4.0-bin.tar.gz</p>
 <h1>mv flume-conf.properties.template flume-conf.properties</h1>
 <p>内容如下</p>
-
-      
-    </div>
-    <footer>
-      
-        
-        
-      
-      <div class="clearfix"></div>
-    </footer>
-  </div>
-</article>
-
-
-
-  <article class="post">
-  
-  <div class="post-content">
-    <header>
-      
-        <div class="icon"></div>
-        <time datetime="2013-10-10T10:33:15.000Z"><a href="/2013/10/10/mapreduce-explain/">10月 10 2013</a></time>
-      
-      
-  
-    <h1 class="title"><a href="/2013/10/10/mapreduce-explain/">MapReduce执行过程</a></h1>
-  
-
-    </header>
-    <div class="entry">
-      
-        <h1>MapReduce过程</h1>
-<h2>JobClient提交作业</h2>
-<p>JobClient的静态方法runJob(jobconf)会实例化一个jc(JobClient),然后调用submitJob(job)方法，提交作业，改方法返回一个RunningJob对象<br>SubmitJob(job)调用submitJobInternal(job)，而在submitJobInternal(job)最终到jobSubmitClient.submitJob()完成(实则是调用RPC调用JobTracker. submitJob())，实际jobSubmitClient是JobSubmissionProtocol(JobTracker实现)<br>submitJobInternal()在中，还会做这些事情：<br>①    ,job.split :文件的分块相关信息，<br>②    ,job.xml：作业配置信息，Mapper,Reducer,输入输出格式实现等<br>③    ,job.jar</p>
-<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-</pre></td><td class="code"><pre>  <span class="keyword">public</span> <span class="keyword">static</span> RunningJob runJob(JobConf job) <span class="keyword">throws</span> IOException {
-    JobClient jc = <span class="keyword">new</span> JobClient(job);
-    RunningJob rj = jc.submitJob(job);
-    <span class="keyword">try</span> {
-      <span class="keyword">if</span> (!jc.monitorAndPrintJob(job, rj)) {
-        LOG.info(<span class="string">"Job Failed: "</span> + rj.getFailureInfo());
-        <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Job failed!"</span>);
-      }
-    } <span class="keyword">catch</span> (InterruptedException ie) {
-      Thread.currentThread().interrupt();
-    }
-    <span class="keyword">return</span> rj;
-  }
-</pre></td></tr></table></figure>
-
-<p>submitJobInternal(job)源代码</p>
-<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-46
-47
-48
-49
-50
-51
-52
-53
-54
-55
-56
-57
-58
-59
-60
-61
-62
-63
-64
-65
-66
-67
-68
-69
-70
-71
-72
-73
-74
-75
-76
-77
-78
-79
-80
-81
-82
-83
-84
-85
-86
-87
-88
-89
-90
-91
-92
-93
-</pre></td><td class="code"><pre>
-    <span class="comment">/*
-     * configure the command line options correctly on the submitting dfs
-     */</span>
-    <span class="keyword">return</span> ugi.doAs(<span class="keyword">new</span> PrivilegedExceptionAction&lt;RunningJob&gt;() {
-      <span class="keyword">public</span> RunningJob run() <span class="keyword">throws</span> FileNotFoundException, 
-      ClassNotFoundException,
-      InterruptedException,
-      IOException{
-        JobConf jobCopy = job;
-        Path jobStagingArea = JobSubmissionFiles.getStagingDir(JobClient.<span class="keyword">this</span>,
-            jobCopy);
-        JobID jobId = jobSubmitClient.getNewJobId();
-        Path submitJobDir = <span class="keyword">new</span> Path(jobStagingArea, jobId.toString());
-        jobCopy.set(<span class="string">"mapreduce.job.dir"</span>, submitJobDir.toString());
-        JobStatus status = <span class="keyword">null</span>;
-        <span class="keyword">try</span> {
-          populateTokenCache(jobCopy, jobCopy.getCredentials());
-
-          copyAndConfigureFiles(jobCopy, submitJobDir);
-
-          <span class="comment">// get delegation token for the dir</span>
-          TokenCache.obtainTokensForNamenodes(jobCopy.getCredentials(),
-                                              <span class="keyword">new</span> Path [] {submitJobDir},
-                                              jobCopy);
-
-          Path submitJobFile = JobSubmissionFiles.getJobConfPath(submitJobDir);
-          <span class="keyword">int</span> reduces = jobCopy.getNumReduceTasks();
-          InetAddress ip = InetAddress.getLocalHost();
-          <span class="keyword">if</span> (ip != <span class="keyword">null</span>) {
-            job.setJobSubmitHostAddress(ip.getHostAddress());
-            job.setJobSubmitHostName(ip.getHostName());
-          }
-          JobContext context = <span class="keyword">new</span> JobContext(jobCopy, jobId);
-
-          <span class="comment">// Check the output specification</span>
-          <span class="keyword">if</span> (reduces == <span class="number">0</span> ? jobCopy.getUseNewMapper() : 
-            jobCopy.getUseNewReducer()) {
-            org.apache.hadoop.mapreduce.OutputFormat&lt;?,?&gt; output =
-              ReflectionUtils.newInstance(context.getOutputFormatClass(),
-                  jobCopy);
-            output.checkOutputSpecs(context);
-          } <span class="keyword">else</span> {
-            jobCopy.getOutputFormat().checkOutputSpecs(fs, jobCopy);
-          }
-          
-          jobCopy = (JobConf)context.getConfiguration();
-
-          <span class="comment">// Create the splits for the job</span>
-          FileSystem fs = submitJobDir.getFileSystem(jobCopy);
-          LOG.debug(<span class="string">"Creating splits at "</span> + fs.makeQualified(submitJobDir));
-          <span class="keyword">int</span> maps = writeSplits(context, submitJobDir);
-          jobCopy.setNumMapTasks(maps);
-
-          <span class="comment">// write "queue admins of the queue to which job is being submitted"</span>
-          <span class="comment">// to job file.</span>
-          String queue = jobCopy.getQueueName();
-          AccessControlList acl = jobSubmitClient.getQueueAdmins(queue);
-          jobCopy.set(QueueManager.toFullPropertyName(queue,
-              QueueACL.ADMINISTER_JOBS.getAclName()), acl.getACLString());
-
-          <span class="comment">// Write job file to JobTracker's fs        </span>
-          FSDataOutputStream out = 
-            FileSystem.create(fs, submitJobFile,
-                <span class="keyword">new</span> FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION));
-
-          <span class="keyword">try</span> {
-            jobCopy.writeXml(out);
-          } <span class="keyword">finally</span> {
-            out.close();
-          }
-          <span class="comment">//</span>
-          <span class="comment">// Now, actually submit the job (using the submit name)</span>
-          <span class="comment">//</span>
-          printTokens(jobId, jobCopy.getCredentials());
-          status = jobSubmitClient.submitJob(
-              jobId, submitJobDir.toString(), jobCopy.getCredentials());
-          JobProfile prof = jobSubmitClient.getJobProfile(jobId);
-          <span class="keyword">if</span> (status != <span class="keyword">null</span> &amp;&amp; prof != <span class="keyword">null</span>) {
-            <span class="keyword">return</span> <span class="keyword">new</span> NetworkedJob(status, prof, jobSubmitClient);
-          } <span class="keyword">else</span> {
-            <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Could not launch job"</span>);
-          }
-        } <span class="keyword">finally</span> {
-          <span class="keyword">if</span> (status == <span class="keyword">null</span>) {
-            LOG.info(<span class="string">"Cleaning up the staging area "</span> + submitJobDir);
-            <span class="keyword">if</span> (fs != <span class="keyword">null</span> &amp;&amp; submitJobDir != <span class="keyword">null</span>)
-              fs.delete(submitJobDir, <span class="keyword">true</span>);
-          }
-        }
-      }
-    });
-  
-</pre></td></tr></table></figure>
-
-<h2>JobTracker端</h2>
-<p>JobTracker接到作业提交后，在JobTracker.submitJob()中,首先创建一个JobInProgress对象, JobInProgress对象代表一道作业，它的作用是维护这道作业的所有信息，包括作业剖析JobProfile和最近作业状态JobStatus,并登记此作业所有Tasks进任务表中,随后JobTracker通过在addJob(jobId, job)方法中调用listener.jobAdded(job);将其加入到调度队列中</p>
-<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-</pre></td><td class="code"><pre>  <span class="javadoc">/**
-   * Adds a job to the jobtracker. Make sure that the checks are inplace before
-   * adding a job. This is the core job submission logic
-   * <span class="javadoctag">@param</span> jobId The id for the job submitted which needs to be added
-   */</span>
-  <span class="keyword">private</span> <span class="keyword">synchronized</span> JobStatus addJob(JobID jobId, JobInProgress job) 
-  <span class="keyword">throws</span> IOException {
-    totalSubmissions++;
-
-    <span class="keyword">synchronized</span> (jobs) {
-      <span class="keyword">synchronized</span> (taskScheduler) {
-        jobs.put(job.getProfile().getJobID(), job);
-        <span class="keyword">for</span> (JobInProgressListener listener : jobInProgressListeners) {
-          listener.jobAdded(job);
-        }
-      }
-    }
-    myInstrumentation.submitJob(job.getJobConf(), jobId);
-    job.getQueueMetrics().submitJob(job.getJobConf(), jobId);
-
-    LOG.info(<span class="string">"Job "</span> + jobId + <span class="string">" added successfully for user '"</span> 
-             + job.getJobConf().getUser() + <span class="string">"' to queue '"</span> 
-             + job.getJobConf().getQueueName() + <span class="string">"'"</span>);
-    AuditLogger.logSuccess(job.getUser(), 
-        Operation.SUBMIT_JOB.name(), jobId.toString());
-    <span class="keyword">return</span> job.getStatus();
-  }
-</pre></td></tr></table></figure>
 
       
     </div>
